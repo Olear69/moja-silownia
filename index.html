@@ -2,11 +2,27 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Lightweight Babyyy</title>
+    
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Zapobiega przesuwaniu strony przy dotyku na telefonach */
+      body {
+        overscroll-behavior-y: contain;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
   </head>
-  <body>
+  <body class="bg-[#0a0a0a]">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
