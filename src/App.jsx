@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dumbbell, List, Play, Plus, Trash2, Check, X, Save, History, ChevronRight, BarChart2, Pencil, ArrowUp, ArrowDown } from 'lucide-react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
+import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 
 // --- MOTYWY WIZUALNE DLA PROFILI ---
 const themes = {
@@ -174,6 +177,93 @@ export default function App() {
   const [showEasterEgg, setShowEasterEgg] = useState(false);
   const [expandedCharts, setExpandedCharts] = useState({});
   const [selectedHistoryExercise, setSelectedHistoryExercise] = useState(null);
+
+  // --- FIREBASE INTEGRACJA (CHMURA) ---
+  const [cloudUser, setCloudUser] = useState(null);
+  const [db, setDb] = useState(null);
+  const isCloudUpdate = useRef(false);
+
+  useEffect(() => {
+    let app, authInstance, dbInstance;
+    try {
+      let config;
+      if (typeof __firebase_config !== 'undefined') {
+        // Ustawienia dla wirtualnego Canvasu
+        config = JSON.parse(__firebase_config);
+      } else {
+        // DLA TWOJEGO VERCELA - WPISZ TUTAJ SWOJE KLUCZE Z FIREBASE!
+        // Zmień linijkę `config = null;` na swój obiekt, tak jak w komentarzu poniżej:
+        config = null; 
+        
+        /* PRZYKŁAD, jak powinno to wyglądać:
+        config = {
+          apiKey: "AIzaSyTwojTajnyKlucz...",
+          authDomain: "ronnie-gym.firebaseapp.com",
+          projectId: "ronnie-gym",
+          storageBucket: "ronnie-gym.appspot.com",
+          messagingSenderId: "123456789",
+          appId: "1:123456789:web:abcdefgh"
+        };
+        */
+      }
+
+      if (config && config.apiKey) {
+        app = initializeApp(config);
+        authInstance = getAuth(app);
+        dbInstance = getFirestore(app);
+        setDb(dbInstance);
+
+        const initAuth = async () => {
+          try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await signInWithCustomToken(authInstance, __initial_auth_token);
+            } else {
+              await signInAnonymously(authInstance);
+            }
+          } catch(e) { console.error("Błąd logowania Firebase", e); }
+        };
+        initAuth();
+
+        const unsub = onAuthStateChanged(authInstance, user => setCloudUser(user));
+        return () => unsub();
+      }
+    } catch(e) { console.error("Błąd inicjalizacji Firebase", e); }
+  }, []);
+
+  // Pobieranie danych z chmury po zalogowaniu
+  useEffect(() => {
+    if (!db || !cloudUser) return;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'ronnie-gym-app';
+    const userDoc = doc(db, 'artifacts', appId, 'users', cloudUser.uid, 'gymData', 'state');
+    
+    const unsub = onSnapshot(userDoc, (docSnap) => {
+       if (docSnap.exists()) {
+          isCloudUpdate.current = true; // Zabezpieczenie przed pętlą
+          const data = docSnap.data();
+          if (data.exercises) setExercises(data.exercises);
+          if (data.routines) setRoutines(data.routines);
+          if (data.historyTurtle) setHistoryTurtle(data.historyTurtle);
+          if (data.historyBlonde) setHistoryBlonde(data.historyBlonde);
+          if (data.activeWorkoutTurtle !== undefined) setActiveWorkoutTurtle(data.activeWorkoutTurtle);
+          if (data.activeWorkoutBlonde !== undefined) setActiveWorkoutBlonde(data.activeWorkoutBlonde);
+          
+          setTimeout(() => { isCloudUpdate.current = false; }, 500);
+       }
+    }, (error) => console.error("Błąd odczytu chmury:", error));
+    return () => unsub();
+  }, [db, cloudUser]);
+
+  // Zapisywanie danych do chmury za każdym razem, gdy zrobisz coś w apce
+  useEffect(() => {
+    if (!db || !cloudUser || isCloudUpdate.current) return;
+    
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'ronnie-gym-app';
+    const userDoc = doc(db, 'artifacts', appId, 'users', cloudUser.uid, 'gymData', 'state');
+    
+    const stateToSave = { exercises, routines, historyTurtle, historyBlonde, activeWorkoutTurtle, activeWorkoutBlonde };
+    setDoc(userDoc, stateToSave, { merge: true }).catch(e => console.error("Błąd zapisu chmury:", e));
+  }, [exercises, routines, historyTurtle, historyBlonde, activeWorkoutTurtle, activeWorkoutBlonde, db, cloudUser]);
+
 
   useEffect(() => { localStorage.setItem('gym_currentUser', currentUser); }, [currentUser]);
   useEffect(() => { localStorage.setItem('gym_exercises', JSON.stringify(exercises)); }, [exercises]);
