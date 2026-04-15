@@ -4,128 +4,85 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 
-// --- MOTYWY WIZUALNE DLA PROFILI ---
+// --- MOTYWY WIZUALNE DLA PROFILI (JASNE) ---
 const themes = {
   turtle: {
-    textMain: 'text-lime-500',
-    bgMain10: 'bg-lime-500/10',
-    borderMain20: 'border-lime-500/20',
-    ringMain50: 'focus:ring-lime-500/50',
-    focusRingMain: 'focus:ring-lime-500',
-    focusBorderMain: 'focus:border-lime-500',
-    fillMain20: 'fill-lime-500/20',
-    gradMainSec: 'from-lime-500 to-red-500',
-    navGrad: 'from-lime-500/20',
+    textMain: 'text-emerald-600',
+    bgMain10: 'bg-emerald-50',
+    borderMain20: 'border-emerald-200',
+    ringMain50: 'focus:ring-emerald-500/30',
+    focusRingMain: 'focus:ring-emerald-500',
+    focusBorderMain: 'focus:border-emerald-500',
+    fillMain20: 'fill-emerald-100',
+    gradMainSec: 'from-emerald-400 to-teal-500',
+    navGrad: 'from-emerald-100/50',
     
-    hoverBgMain10: 'hover:bg-lime-500/10',
-    hoverBgMain20: 'hover:bg-lime-500/20',
-    hoverTextMain: 'hover:text-lime-500',
-    hoverBorderMain50: 'hover:border-lime-500/50',
+    hoverBgMain10: 'hover:bg-emerald-50',
+    hoverBgMain20: 'hover:bg-emerald-100',
+    hoverTextMain: 'hover:text-emerald-600',
+    hoverBorderMain50: 'hover:border-emerald-300',
     
-    groupHoverTextMain: 'group-hover:text-lime-500',
-    gradHover: 'group-hover:from-lime-500 group-hover:to-red-500',
-    shadowMain20: 'shadow-lime-500/20',
-    groupHoverShadowMain20: 'group-hover:shadow-lime-500/20',
+    groupHoverTextMain: 'group-hover:text-emerald-600',
+    gradHover: 'group-hover:from-emerald-400 group-hover:to-teal-500',
+    shadowMain20: 'shadow-emerald-500/30',
+    groupHoverShadowMain20: 'group-hover:shadow-emerald-500/20',
 
-    textSec: 'text-red-500',
-    bgSec10: 'bg-red-500/10',
-    bgSec30: 'bg-red-500/30',
-    borderSec: 'border-red-500',
-    fillSec20: 'fill-red-500/20',
+    textSec: 'text-teal-600',
+    bgSec10: 'bg-teal-50',
+    bgSec30: 'bg-teal-100',
+    borderSec: 'border-teal-200',
+    fillSec20: 'fill-teal-100',
     
-    hoverBgSec20: 'hover:bg-red-500/20',
-    hoverFillSec40: 'hover:fill-red-500/40',
+    hoverBgSec20: 'hover:bg-teal-100',
+    hoverFillSec40: 'hover:fill-teal-200',
     
-    chartSecFill: '#ef4444' // red-500
+    chartSecFill: '#0d9488' // teal-600
   },
   blonde: {
-    textMain: 'text-pink-500',
-    bgMain10: 'bg-pink-500/10',
-    borderMain20: 'border-pink-500/20',
-    ringMain50: 'focus:ring-pink-500/50',
-    focusRingMain: 'focus:ring-pink-500',
-    focusBorderMain: 'focus:border-pink-500',
-    fillMain20: 'fill-pink-500/20',
-    gradMainSec: 'from-pink-500 to-amber-400',
-    navGrad: 'from-pink-500/20',
+    textMain: 'text-rose-500',
+    bgMain10: 'bg-rose-50',
+    borderMain20: 'border-rose-200',
+    ringMain50: 'focus:ring-rose-500/30',
+    focusRingMain: 'focus:ring-rose-500',
+    focusBorderMain: 'focus:border-rose-500',
+    fillMain20: 'fill-rose-100',
+    gradMainSec: 'from-rose-400 to-red-400',
+    navGrad: 'from-rose-100/50',
     
-    hoverBgMain10: 'hover:bg-pink-500/10',
-    hoverBgMain20: 'hover:bg-pink-500/20',
-    hoverTextMain: 'hover:text-pink-500',
-    hoverBorderMain50: 'hover:border-pink-500/50',
+    hoverBgMain10: 'hover:bg-rose-50',
+    hoverBgMain20: 'hover:bg-rose-100',
+    hoverTextMain: 'hover:text-rose-600',
+    hoverBorderMain50: 'hover:border-rose-300',
     
-    groupHoverTextMain: 'group-hover:text-pink-500',
-    gradHover: 'group-hover:from-pink-500 group-hover:to-amber-400',
-    shadowMain20: 'shadow-pink-500/20',
-    groupHoverShadowMain20: 'group-hover:shadow-pink-500/20',
+    groupHoverTextMain: 'group-hover:text-rose-500',
+    gradHover: 'group-hover:from-rose-400 group-hover:to-red-400',
+    shadowMain20: 'shadow-rose-500/30',
+    groupHoverShadowMain20: 'group-hover:shadow-rose-500/20',
 
-    textSec: 'text-amber-400',
-    bgSec10: 'bg-amber-400/10',
-    bgSec30: 'bg-amber-400/30',
-    borderSec: 'border-amber-400',
-    fillSec20: 'fill-amber-400/20',
+    textSec: 'text-red-500',
+    bgSec10: 'bg-red-50',
+    bgSec30: 'bg-red-100',
+    borderSec: 'border-red-200',
+    fillSec20: 'fill-red-100',
     
-    hoverBgSec20: 'hover:bg-amber-400/20',
-    hoverFillSec40: 'hover:fill-amber-400/40',
+    hoverBgSec20: 'hover:bg-red-100',
+    hoverFillSec40: 'hover:fill-red-200',
     
-    chartSecFill: '#fbbf24' // amber-400
+    chartSecFill: '#ef4444' // red-500
   }
 };
 
 // --- KOMPONENT: IKONY PARTII MIĘŚNIOWYCH (SVG) ---
 const MuscleIcon = ({ category, className = "w-5 h-5" }) => {
   const cat = category === 'Klatka piersiowa' ? 'Klatka' : category;
-
   switch (cat) {
-    case 'Klatka':
-      return (
-        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 8c4-3 12-3 16 0" />
-          <path d="M4 13c4 2 12 2 16 0" />
-          <path d="M12 8v5" />
-        </svg>
-      );
-    case 'Plecy':
-      return (
-        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 3L5 10l1 11h12l1-11z" />
-          <path d="M12 3v18" />
-        </svg>
-      );
-    case 'Nogi':
-      return (
-        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M9 5v14l-2 3" />
-          <path d="M15 5v14l2 3" />
-          <path d="M7 5h10" />
-        </svg>
-      );
-    case 'Ramiona':
-      return (
-        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M8 13a4 4 0 0 1 4-4h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-4a4 4 0 0 1-4-4z" />
-          <path d="M8 13v-2a4 4 0 0 0-4-4H2" />
-        </svg>
-      );
-    case 'Barki':
-      return (
-        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M5 11a7 7 0 0 1 14 0v4" />
-          <path d="M9 15v3" />
-          <path d="M15 15v3" />
-        </svg>
-      );
-    case 'Brzuch':
-      return (
-        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="7" y="5" width="10" height="14" rx="2" />
-          <path d="M7 10h10" />
-          <path d="M7 14h10" />
-          <path d="M12 5v14" />
-        </svg>
-      );
-    default:
-      return <Dumbbell className={className} />;
+    case 'Klatka': return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 8c4-3 12-3 16 0" /><path d="M4 13c4 2 12 2 16 0" /><path d="M12 8v5" /></svg>;
+    case 'Plecy': return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3L5 10l1 11h12l1-11z" /><path d="M12 3v18" /></svg>;
+    case 'Nogi': return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5v14l-2 3" /><path d="M15 5v14l2 3" /><path d="M7 5h10" /></svg>;
+    case 'Ramiona': return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 13a4 4 0 0 1 4-4h4a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-4a4 4 0 0 1-4-4z" /><path d="M8 13v-2a4 4 0 0 0-4-4H2" /></svg>;
+    case 'Barki': return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 11a7 7 0 0 1 14 0v4" /><path d="M9 15v3" /><path d="M15 15v3" /></svg>;
+    case 'Brzuch': return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="7" y="5" width="10" height="14" rx="2" /><path d="M7 10h10" /><path d="M7 14h10" /><path d="M12 5v14" /></svg>;
+    default: return <Dumbbell className={className} />;
   }
 };
 
@@ -150,20 +107,17 @@ const muscleGroups = {
 };
 
 export default function App() {
-  // --- STANY APLIKACJI I PROFILI ---
   const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('gym_currentUser') || 'blonde');
   const theme = themes[currentUser];
 
   const [activeTab, setActiveTab] = useState('workout'); 
   
-  // Stany logowania chmurowego
   const [user, setUser] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState('');
 
-  // Wspólne dane: Ćwiczenia i Plany
   const [exercises, setExercises] = useState(() => {
     const saved = localStorage.getItem('gym_exercises');
     return saved ? JSON.parse(saved) : defaultExercises;
@@ -174,10 +128,9 @@ export default function App() {
     return saved ? JSON.parse(saved) : defaultRoutines;
   });
   
-  // Rozdzielone dane: Historia Treningów
   const [historyTurtle, setHistoryTurtle] = useState(() => {
     const saved = localStorage.getItem('gym_history_turtle');
-    return saved ? JSON.parse(saved) : (localStorage.getItem('gym_history') ? JSON.parse(localStorage.getItem('gym_history')) : []); // Migracja
+    return saved ? JSON.parse(saved) : (localStorage.getItem('gym_history') ? JSON.parse(localStorage.getItem('gym_history')) : []);
   });
   const [historyBlonde, setHistoryBlonde] = useState(() => {
     const saved = localStorage.getItem('gym_history_blonde');
@@ -186,7 +139,6 @@ export default function App() {
   const history = currentUser === 'turtle' ? historyTurtle : historyBlonde;
   const setHistory = currentUser === 'turtle' ? setHistoryTurtle : setHistoryBlonde;
 
-  // Rozdzielone dane: Aktywny Trening
   const [activeWorkoutTurtle, setActiveWorkoutTurtle] = useState(() => {
     const saved = localStorage.getItem('gym_activeWorkout_turtle');
     return saved ? JSON.parse(saved) : null;
@@ -205,13 +157,11 @@ export default function App() {
   const [expandedCharts, setExpandedCharts] = useState({});
   const [selectedHistoryExercise, setSelectedHistoryExercise] = useState(null);
 
-  // --- FIREBASE KONFIGURACJA ---
   const [db, setDb] = useState(null);
   const [auth, setAuth] = useState(null);
   const isCloudUpdate = useRef(false);
 
   useEffect(() => {
-    // TUTAJ WKLEJ SWOJE KLUCZE (firebaseConfig)
     const config = {
       apiKey: "AIzaSyDS1P1H4IrXG6CCU3kIQ4LZcKtEypgEIIc",
       authDomain: "ronnie-silka.firebaseapp.com",
@@ -221,7 +171,6 @@ export default function App() {
       appId: "1:225312176403:web:3416595fe94083b60f02e6"
     };
 
-    // Inicjuj Firebase tylko jeśli klucze zostały zmienione
     if (config.apiKey !== "TWOJE_API_KEY") {
       try {
         const app = initializeApp(config);
@@ -241,11 +190,9 @@ export default function App() {
     }
   }, []);
 
-  // Synchronizacja pobierania z chmury (Firestore)
   useEffect(() => {
     if (!db || !user) return;
     const userDoc = doc(db, 'users', user.uid);
-    
     const unsub = onSnapshot(userDoc, (docSnap) => {
        if (docSnap.exists()) {
           isCloudUpdate.current = true;
@@ -254,14 +201,12 @@ export default function App() {
           if (data.routines) setRoutines(data.routines);
           if (data.historyTurtle) setHistoryTurtle(data.historyTurtle);
           if (data.historyBlonde) setHistoryBlonde(data.historyBlonde);
-          
           setTimeout(() => { isCloudUpdate.current = false; }, 500);
        }
     }, (err) => console.log("Cloud Error:", err));
     return () => unsub();
   }, [db, user]);
 
-  // Synchronizacja zapisu do chmury
   useEffect(() => {
     if (!db || !user || isCloudUpdate.current) return;
     const userDoc = doc(db, 'users', user.uid);
@@ -269,7 +214,6 @@ export default function App() {
     setDoc(userDoc, stateToSave, { merge: true }).catch(e => console.error(e));
   }, [exercises, routines, historyTurtle, historyBlonde, db, user]);
 
-  // Zapisywanie zmian w tle w lokalnej przeglądarce
   useEffect(() => { localStorage.setItem('gym_currentUser', currentUser); }, [currentUser]);
   useEffect(() => { localStorage.setItem('gym_exercises', JSON.stringify(exercises)); }, [exercises]);
   useEffect(() => { localStorage.setItem('gym_routines', JSON.stringify(routines)); }, [routines]);
@@ -278,24 +222,16 @@ export default function App() {
   useEffect(() => { localStorage.setItem('gym_activeWorkout_turtle', JSON.stringify(activeWorkoutTurtle)); }, [activeWorkoutTurtle]);
   useEffect(() => { localStorage.setItem('gym_activeWorkout_blonde', JSON.stringify(activeWorkoutBlonde)); }, [activeWorkoutBlonde]);
 
-  useEffect(() => { 
-    if (activeTab !== 'history') setSelectedHistoryExercise(null); 
-  }, [activeTab]);
+  useEffect(() => { if (activeTab !== 'history') setSelectedHistoryExercise(null); }, [activeTab]);
 
-  // --- FUNKCJE LOGOWANIA ---
   const handleAuth = async (type) => {
     setAuthError('');
     try {
-      if (!auth) throw new Error("Chmura nie została jeszcze skonfigurowana. Wpisz klucze w kodzie!");
-      if (type === 'login') {
-        await signInWithEmailAndPassword(auth, email, password);
-      } else {
-        await createUserWithEmailAndPassword(auth, email, password);
-      }
+      if (!auth) throw new Error("Skonfiguruj klucze chmury!");
+      if (type === 'login') await signInWithEmailAndPassword(auth, email, password);
+      else await createUserWithEmailAndPassword(auth, email, password);
       setShowLoginModal(false);
-    } catch (err) {
-      setAuthError("Błąd: " + err.message);
-    }
+    } catch (err) { setAuthError("Błąd: " + err.message); }
   };
 
   const handleLogout = () => {
@@ -303,30 +239,19 @@ export default function App() {
     setUser(null);
   };
 
-
-  // --- LOGIKA: BIBLIOTEKA ĆWICZEŃ ---
   const [newExerciseName, setNewExerciseName] = useState('');
   const [newExerciseCategory, setNewExerciseCategory] = useState('');
   const [newExerciseSubcategory, setNewExerciseSubcategory] = useState('');
 
   const addExercise = () => {
     if (!newExerciseName.trim() || !newExerciseCategory || !newExerciseSubcategory) return;
-    const newEx = {
-      id: Date.now().toString(),
-      name: newExerciseName,
-      target: `${newExerciseCategory} - ${newExerciseSubcategory}`
-    };
+    const newEx = { id: Date.now().toString(), name: newExerciseName, target: `${newExerciseCategory} - ${newExerciseSubcategory}` };
     setExercises([...exercises, newEx]);
-    setNewExerciseName('');
-    setNewExerciseCategory('');
-    setNewExerciseSubcategory('');
+    setNewExerciseName(''); setNewExerciseCategory(''); setNewExerciseSubcategory('');
   };
 
-  const deleteExercise = (id) => {
-    setExercises(exercises.filter(ex => ex.id !== id));
-  };
+  const deleteExercise = (id) => setExercises(exercises.filter(ex => ex.id !== id));
 
-  // --- LOGIKA: PLANY TRENINGOWE ---
   const [isCreatingRoutine, setIsCreatingRoutine] = useState(false);
   const [editingRoutineId, setEditingRoutineId] = useState(null); 
   const [newRoutineName, setNewRoutineName] = useState('');
@@ -334,67 +259,37 @@ export default function App() {
 
   const openRoutineEditor = (routine = null) => {
     if (routine) {
-      setEditingRoutineId(routine.id);
-      setNewRoutineName(routine.name);
-      setSelectedExercisesForRoutine(routine.exercises);
+      setEditingRoutineId(routine.id); setNewRoutineName(routine.name); setSelectedExercisesForRoutine(routine.exercises);
     } else {
-      setEditingRoutineId(null);
-      setNewRoutineName('');
-      setSelectedExercisesForRoutine([]);
+      setEditingRoutineId(null); setNewRoutineName(''); setSelectedExercisesForRoutine([]);
     }
     setIsCreatingRoutine(true);
   };
 
   const moveExercise = (index, direction) => {
     const newSelected = [...selectedExercisesForRoutine];
-    if (direction === 'up' && index > 0) {
-      [newSelected[index - 1], newSelected[index]] = [newSelected[index], newSelected[index - 1]];
-    } else if (direction === 'down' && index < newSelected.length - 1) {
-      [newSelected[index + 1], newSelected[index]] = [newSelected[index], newSelected[index + 1]];
-    }
+    if (direction === 'up' && index > 0) [newSelected[index - 1], newSelected[index]] = [newSelected[index], newSelected[index - 1]];
+    else if (direction === 'down' && index < newSelected.length - 1) [newSelected[index + 1], newSelected[index]] = [newSelected[index], newSelected[index + 1]];
     setSelectedExercisesForRoutine(newSelected);
   };
 
   const saveRoutine = () => {
     if (!newRoutineName.trim() || selectedExercisesForRoutine.length === 0) return;
-    
     if (editingRoutineId) {
-      setRoutines(routines.map(r => 
-        r.id === editingRoutineId 
-          ? { ...r, name: newRoutineName, exercises: selectedExercisesForRoutine } 
-          : r
-      ));
+      setRoutines(routines.map(r => r.id === editingRoutineId ? { ...r, name: newRoutineName, exercises: selectedExercisesForRoutine } : r));
     } else {
-      const newRoutine = {
-        id: Date.now().toString(),
-        name: newRoutineName,
-        exercises: selectedExercisesForRoutine
-      };
-      setRoutines([...routines, newRoutine]);
+      setRoutines([...routines, { id: Date.now().toString(), name: newRoutineName, exercises: selectedExercisesForRoutine }]);
     }
-    
-    setIsCreatingRoutine(false);
-    setEditingRoutineId(null);
-    setNewRoutineName('');
-    setSelectedExercisesForRoutine([]);
+    setIsCreatingRoutine(false); setEditingRoutineId(null); setNewRoutineName(''); setSelectedExercisesForRoutine([]);
   };
 
-  const deleteRoutine = (id) => {
-    setRoutines(routines.filter(r => r.id !== id));
-  };
+  const deleteRoutine = (id) => setRoutines(routines.filter(r => r.id !== id));
 
-  // --- LOGIKA: AKTYWNY TRENING ---
   const startWorkout = (routine) => {
-    const workoutSession = {
-      id: Date.now().toString(),
-      routineName: routine.name,
-      startTime: new Date().toISOString(),
-      exercises: routine.exercises.map(exId => ({
-        exerciseId: exId,
-        sets: [{ weight: '', reps: '' }]
-      }))
-    };
-    setActiveWorkout(workoutSession);
+    setActiveWorkout({
+      id: Date.now().toString(), routineName: routine.name, startTime: new Date().toISOString(),
+      exercises: routine.exercises.map(exId => ({ exerciseId: exId, sets: [{ weight: '', reps: '' }] }))
+    });
   };
 
   const finishWorkout = () => {
@@ -408,43 +303,27 @@ export default function App() {
     const exerciseSummaries = activeWorkout.exercises.map(workoutEx => {
       const exerciseDetails = exercises.find(e => e.id === workoutEx.exerciseId);
       let exVolume = 0;
-      
       workoutEx.sets.forEach(set => {
-        const weightStr = String(set.weight).replace(',', '.');
-        const w = parseFloat(weightStr) || 0;
+        const w = parseFloat(String(set.weight).replace(',', '.')) || 0;
         const r = parseInt(set.reps) || 0;
         if (w > 0 && r > 0) exVolume += (w * r);
       });
-      
       totalVolume += exVolume;
       return { name: exerciseDetails?.name || 'Nieznane ćwiczenie', volume: exVolume };
     });
 
     const summary = {
-      id: Date.now().toString(),
-      routineName: activeWorkout.routineName,
-      date: endTime.toLocaleDateString(),
-      timestamp: endTime.toISOString(),
-      duration: `${diffMins} min ${diffSecs} s`,
-      totalVolume,
-      exerciseSummaries,
-      exercises: activeWorkout.exercises
+      id: Date.now().toString(), routineName: activeWorkout.routineName, date: endTime.toLocaleDateString(),
+      timestamp: endTime.toISOString(), duration: `${diffMins} min ${diffSecs} s`, totalVolume, exerciseSummaries, exercises: activeWorkout.exercises
     };
 
-    setHistory([summary, ...history]);
-    setSummaryData(summary);
-    setActiveWorkout(null);
-    setShowFinishConfirm(false);
+    setHistory([summary, ...history]); setSummaryData(summary); setActiveWorkout(null); setShowFinishConfirm(false);
   };
 
   const addSet = (exerciseIndex) => {
     const updatedWorkout = { ...activeWorkout };
     const lastSet = updatedWorkout.exercises[exerciseIndex].sets.slice(-1)[0];
-    
-    updatedWorkout.exercises[exerciseIndex].sets.push({
-      weight: lastSet ? lastSet.weight : '',
-      reps: lastSet ? lastSet.reps : ''
-    });
+    updatedWorkout.exercises[exerciseIndex].sets.push({ weight: lastSet ? lastSet.weight : '', reps: lastSet ? lastSet.reps : '' });
     setActiveWorkout(updatedWorkout);
   };
 
@@ -460,65 +339,58 @@ export default function App() {
     setActiveWorkout(updatedWorkout);
   };
 
-  // --- KOMPONENTY WIDOKÓW ---
+  // --- KOMPONENTY WIDOKÓW (ZMIENIONE NA JASNY MOTYW) ---
 
   const LibraryView = () => (
     <div className="p-4 space-y-6 pb-32">
-      <div className="bg-neutral-900 p-5 rounded-2xl shadow-lg border border-neutral-800">
-        <h3 className="font-semibold text-lg mb-4 text-neutral-100">Dodaj nowe ćwiczenie</h3>
+      <div className="bg-white p-5 rounded-[32px] shadow-xl shadow-slate-200/40 border border-slate-100">
+        <h3 className="font-bold text-lg mb-4 text-slate-800">Dodaj nowe ćwiczenie</h3>
         <div className="space-y-3">
           <input 
             type="text" 
             placeholder="Nazwa ćwiczenia (np. Wyciskanie hantli)" 
-            className={`w-full p-3 bg-neutral-950 border border-neutral-800 text-neutral-100 rounded-xl focus:ring-2 ${theme.ringMain50} ${theme.focusBorderMain} outline-none placeholder-neutral-500 transition-all`}
+            className={`w-full p-3.5 bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl focus:ring-2 ${theme.ringMain50} ${theme.focusBorderMain} outline-none placeholder-slate-400 transition-all font-medium`}
             value={newExerciseName}
             onChange={(e) => setNewExerciseName(e.target.value)}
           />
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {newExerciseCategory && (
-              <div className={`w-12 h-12 shrink-0 bg-neutral-950 border border-neutral-800 rounded-xl flex items-center justify-center ${theme.textMain} animate-in fade-in zoom-in duration-300 shadow-inner`}>
+              <div className={`w-14 h-14 shrink-0 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center ${theme.textMain} shadow-sm animate-in fade-in zoom-in duration-300`}>
                 <MuscleIcon category={newExerciseCategory} className="w-6 h-6" />
               </div>
             )}
             <div className="relative flex-1">
               <select
-                className={`w-full p-3 bg-neutral-950 border border-neutral-800 rounded-xl focus:ring-2 ${theme.ringMain50} ${theme.focusBorderMain} outline-none transition-all appearance-none cursor-pointer ${!newExerciseCategory ? 'text-neutral-500' : 'text-neutral-100'}`}
+                className={`w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 ${theme.ringMain50} ${theme.focusBorderMain} outline-none transition-all appearance-none cursor-pointer font-medium ${!newExerciseCategory ? 'text-slate-400' : 'text-slate-800'}`}
                 value={newExerciseCategory}
-                onChange={(e) => {
-                  setNewExerciseCategory(e.target.value);
-                  setNewExerciseSubcategory(''); 
-                }}
+                onChange={(e) => { setNewExerciseCategory(e.target.value); setNewExerciseSubcategory(''); }}
               >
                 <option value="" disabled>Partia mięśniowa...</option>
-                {Object.keys(muscleGroups).map(cat => (
-                  <option key={cat} value={cat} className="text-neutral-100">{cat}</option>
-                ))}
+                {Object.keys(muscleGroups).map(cat => <option key={cat} value={cat} className="text-slate-800">{cat}</option>)}
               </select>
-              <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none rotate-90" size={18} />
+              <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none rotate-90" size={18} />
             </div>
           </div>
 
           {newExerciseCategory && (
             <div className="relative animate-in fade-in slide-in-from-top-2 duration-300">
               <select
-                className={`w-full p-3 bg-neutral-950 border border-neutral-800 rounded-xl focus:ring-2 ${theme.ringMain50} ${theme.focusBorderMain} outline-none transition-all appearance-none cursor-pointer ${!newExerciseSubcategory ? 'text-neutral-500' : 'text-neutral-100'}`}
+                className={`w-full p-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 ${theme.ringMain50} ${theme.focusBorderMain} outline-none transition-all appearance-none cursor-pointer font-medium ${!newExerciseSubcategory ? 'text-slate-400' : 'text-slate-800'}`}
                 value={newExerciseSubcategory}
                 onChange={(e) => setNewExerciseSubcategory(e.target.value)}
               >
                 <option value="" disabled>Wybierz podkategorię...</option>
-                {muscleGroups[newExerciseCategory].map(sub => (
-                  <option key={sub} value={sub} className="text-neutral-100">{sub}</option>
-                ))}
+                {muscleGroups[newExerciseCategory].map(sub => <option key={sub} value={sub} className="text-slate-800">{sub}</option>)}
               </select>
-              <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none rotate-90" size={18} />
+              <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none rotate-90" size={18} />
             </div>
           )}
 
           <button 
             onClick={addExercise}
             disabled={!newExerciseName.trim() || !newExerciseCategory || !newExerciseSubcategory}
-            className={`w-full bg-gradient-to-r ${theme.gradMainSec} text-white p-3 rounded-xl font-medium flex items-center justify-center gap-2 mt-2 shadow-lg ${theme.shadowMain20} disabled:opacity-50 disabled:grayscale transition-all`}
+            className={`w-full bg-gradient-to-r ${theme.gradMainSec} text-white p-4 rounded-2xl font-bold flex items-center justify-center gap-2 mt-4 shadow-lg ${theme.shadowMain20} disabled:opacity-50 disabled:grayscale transition-all hover:-translate-y-0.5`}
           >
             <Plus size={20} /> Dodaj do biblioteki
           </button>
@@ -526,22 +398,22 @@ export default function App() {
       </div>
 
       <div className="space-y-3">
-        <h3 className="font-semibold text-lg text-neutral-100">Twoje ćwiczenia</h3>
+        <h3 className="font-bold text-lg text-slate-800 pl-2">Twoje ćwiczenia</h3>
         {exercises.length === 0 ? (
-          <p className="text-neutral-500 text-center py-4">Brak ćwiczeń. Dodaj jakieś powyżej!</p>
+          <p className="text-slate-400 text-center py-4 font-medium">Brak ćwiczeń. Dodaj jakieś powyżej!</p>
         ) : (
           exercises.map(ex => (
-            <div key={ex.id} className="flex justify-between items-center bg-neutral-900 p-4 rounded-xl shadow-sm border border-neutral-800 hover:border-neutral-700 transition-colors">
+            <div key={ex.id} className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm shadow-slate-200/50 border border-slate-100 hover:border-slate-300 transition-colors">
               <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-xl bg-neutral-950 border border-neutral-800 flex items-center justify-center ${theme.textMain} shadow-inner shrink-0`}>
-                  <MuscleIcon category={ex.target.split(' - ')[0]} className="w-6 h-6" />
+                <div className={`w-12 h-12 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center ${theme.textMain} shrink-0`}>
+                  <MuscleIcon category={ex.target.split(' - ')[0]} className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="font-medium text-neutral-200 leading-tight mb-1">{ex.name}</p>
-                  <p className="text-[11px] font-bold tracking-wide text-neutral-500 uppercase">{ex.target}</p>
+                  <p className="font-bold text-slate-800 leading-tight mb-1">{ex.name}</p>
+                  <p className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{ex.target}</p>
                 </div>
               </div>
-              <button onClick={() => deleteExercise(ex.id)} className="text-neutral-500 p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors ml-2 shrink-0">
+              <button onClick={() => deleteExercise(ex.id)} className="text-slate-400 p-2 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors ml-2 shrink-0">
                 <Trash2 size={18} />
               </button>
             </div>
@@ -557,27 +429,27 @@ export default function App() {
         <>
           <button 
             onClick={() => openRoutineEditor(null)}
-            className={`w-full bg-gradient-to-r ${theme.gradMainSec} text-neutral-950 p-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] shadow-lg ${theme.shadowMain20} transition-all`}
+            className={`w-full bg-gradient-to-r ${theme.gradMainSec} text-white p-5 rounded-3xl font-bold flex items-center justify-center gap-2 hover:scale-[1.02] shadow-xl ${theme.shadowMain20} transition-all`}
           >
-            <Plus size={20} /> Stwórz nowy plan treningowy
+            <Plus size={22} strokeWidth={2.5} /> Stwórz nowy plan
           </button>
 
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg text-neutral-100">Twoje plany</h3>
+            <h3 className="font-bold text-lg text-slate-800 pl-2">Twoje plany</h3>
             {routines.length === 0 ? (
-              <p className="text-neutral-500 text-center py-4">Nie masz jeszcze żadnych planów.</p>
+              <p className="text-slate-400 text-center py-4 font-medium">Nie masz jeszcze żadnych planów.</p>
             ) : (
               routines.map(routine => (
-                <div key={routine.id} className="bg-neutral-900 p-5 rounded-2xl shadow-sm border border-neutral-800 flex justify-between items-center hover:border-neutral-700 transition-colors">
+                <div key={routine.id} className="bg-white p-5 rounded-[32px] shadow-lg shadow-slate-200/40 border border-slate-100 flex justify-between items-center hover:border-slate-300 transition-all group">
                   <div>
-                    <h4 className="font-semibold text-lg text-neutral-200">{routine.name}</h4>
-                    <p className="text-sm text-neutral-500 mt-1">{routine.exercises.length} ćwiczeń</p>
+                    <h4 className="font-bold text-xl text-slate-800 group-hover:text-slate-900 transition-colors">{routine.name}</h4>
+                    <p className="text-sm font-medium text-slate-400 mt-1">{routine.exercises.length} ćwiczeń</p>
                   </div>
-                  <div className="flex gap-1">
-                    <button onClick={() => openRoutineEditor(routine)} className={`text-neutral-500 p-2 ${theme.hoverBgMain10} ${theme.hoverTextMain} rounded-lg transition-colors`}>
+                  <div className="flex gap-2">
+                    <button onClick={() => openRoutineEditor(routine)} className={`text-slate-400 p-3 bg-slate-50 hover:bg-slate-100 ${theme.hoverTextMain} rounded-2xl transition-colors`}>
                       <Pencil size={20} />
                     </button>
-                    <button onClick={() => deleteRoutine(routine.id)} className="text-neutral-500 p-2 hover:bg-red-500/10 hover:text-red-400 rounded-lg transition-colors">
+                    <button onClick={() => deleteRoutine(routine.id)} className="text-slate-400 p-3 bg-slate-50 hover:bg-red-50 hover:text-red-500 rounded-2xl transition-colors">
                       <Trash2 size={20} />
                     </button>
                   </div>
@@ -587,43 +459,43 @@ export default function App() {
           </div>
         </>
       ) : (
-        <div className="bg-neutral-900 p-5 rounded-2xl shadow-lg border border-neutral-800 space-y-4">
+        <div className="bg-white p-6 rounded-[32px] shadow-xl shadow-slate-200/50 border border-slate-100 space-y-5">
           <div className="flex justify-between items-center mb-2">
-            <h3 className="font-semibold text-lg text-neutral-100">{editingRoutineId ? "Edytuj plan" : "Nowy plan"}</h3>
-            <button onClick={() => { setIsCreatingRoutine(false); setEditingRoutineId(null); }} className="text-neutral-500 hover:text-neutral-300 transition-colors">
-              <X size={24} />
+            <h3 className="font-bold text-xl text-slate-800">{editingRoutineId ? "Edytuj plan" : "Nowy plan"}</h3>
+            <button onClick={() => { setIsCreatingRoutine(false); setEditingRoutineId(null); }} className="text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 p-2 rounded-full transition-colors">
+              <X size={20} strokeWidth={3} />
             </button>
           </div>
           
           <input 
             type="text" 
             placeholder="Nazwa planu (np. Push Day)" 
-            className={`w-full p-3 bg-neutral-950 border border-neutral-800 text-neutral-100 rounded-xl focus:ring-2 ${theme.ringMain50} ${theme.focusBorderMain} outline-none font-medium placeholder-neutral-600 transition-all`}
+            className={`w-full p-4 bg-slate-50 border border-slate-200 text-slate-800 rounded-2xl focus:ring-2 ${theme.ringMain50} ${theme.focusBorderMain} outline-none font-bold placeholder-slate-400 transition-all text-lg`}
             value={newRoutineName}
             onChange={(e) => setNewRoutineName(e.target.value)}
           />
 
-          <div className="mt-4 space-y-4">
+          <div className="mt-6 space-y-5">
             <div>
-              <p className="text-sm font-medium text-neutral-400 mb-2">Wybrane ćwiczenia (kolejność):</p>
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Wybrane ćwiczenia</p>
               {selectedExercisesForRoutine.length === 0 ? (
-                <p className="text-xs text-neutral-600 italic border border-dashed border-neutral-800 rounded-xl p-3 text-center">Brak wybranych ćwiczeń.</p>
+                <p className="text-sm text-slate-400 italic border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center font-medium">Brak wybranych ćwiczeń.</p>
               ) : (
                 <div className="space-y-2">
                   {selectedExercisesForRoutine.map((exId, idx) => {
                     const ex = exercises.find(e => e.id === exId);
                     if(!ex) return null;
                     return (
-                      <div key={exId + idx} className={`flex items-center justify-between ${theme.bgMain10} border ${theme.borderMain20} p-2.5 rounded-xl`}>
-                        <div className="flex items-center gap-2 overflow-hidden">
-                          <span className={`${theme.textMain} opacity-70 shrink-0`}><MuscleIcon category={ex.target.split(' - ')[0]} className="w-4 h-4"/></span>
-                          <span className={`font-medium ${theme.textMain} text-sm truncate pr-2`}>{idx + 1}. {ex.name}</span>
+                      <div key={exId + idx} className={`flex items-center justify-between ${theme.bgMain10} border ${theme.borderMain20} p-3 rounded-2xl`}>
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <span className={`w-6 h-6 shrink-0 bg-white rounded-full flex items-center justify-center text-[10px] font-bold ${theme.textMain} shadow-sm`}>{idx + 1}</span>
+                          <span className={`font-bold ${theme.textMain} text-sm truncate pr-2`}>{ex.name}</span>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button onClick={() => moveExercise(idx, 'up')} disabled={idx === 0} className="p-1.5 text-neutral-400 hover:text-white disabled:opacity-20 transition-colors"><ArrowUp size={16}/></button>
-                          <button onClick={() => moveExercise(idx, 'down')} disabled={idx === selectedExercisesForRoutine.length - 1} className="p-1.5 text-neutral-400 hover:text-white disabled:opacity-20 transition-colors"><ArrowDown size={16}/></button>
-                          <div className="w-px h-4 bg-neutral-700 mx-1"></div>
-                          <button onClick={() => setSelectedExercisesForRoutine(selectedExercisesForRoutine.filter((_, i) => i !== idx))} className="p-1.5 text-red-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"><Trash2 size={16}/></button>
+                        <div className="flex items-center gap-1 shrink-0 bg-white/50 rounded-xl p-1">
+                          <button onClick={() => moveExercise(idx, 'up')} disabled={idx === 0} className="p-1.5 text-slate-400 hover:text-slate-800 disabled:opacity-30 transition-colors"><ArrowUp size={16}/></button>
+                          <button onClick={() => moveExercise(idx, 'down')} disabled={idx === selectedExercisesForRoutine.length - 1} className="p-1.5 text-slate-400 hover:text-slate-800 disabled:opacity-30 transition-colors"><ArrowDown size={16}/></button>
+                          <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                          <button onClick={() => setSelectedExercisesForRoutine(selectedExercisesForRoutine.filter((_, i) => i !== idx))} className="p-1.5 text-rose-400 hover:text-rose-600 transition-colors"><Trash2 size={16}/></button>
                         </div>
                       </div>
                     )
@@ -633,30 +505,30 @@ export default function App() {
             </div>
 
             <div>
-              <p className="text-sm font-medium text-neutral-400 mb-2">Kliknij, aby dodać ćwiczenie:</p>
-              <div className="max-h-48 overflow-y-auto space-y-2 border border-neutral-800 rounded-xl p-2 bg-neutral-950/50 custom-scrollbar">
+              <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Dostępne ćwiczenia</p>
+              <div className="max-h-56 overflow-y-auto space-y-2 border border-slate-100 rounded-2xl p-2 bg-slate-50/50 custom-scrollbar">
                 {exercises.filter(ex => !selectedExercisesForRoutine.includes(ex.id)).map(ex => (
                   <div 
                     key={ex.id} 
                     onClick={() => setSelectedExercisesForRoutine([...selectedExercisesForRoutine, ex.id])} 
-                    className="flex items-center justify-between bg-neutral-900 border border-transparent hover:border-neutral-700 p-3 rounded-xl cursor-pointer transition-all"
+                    className="flex items-center justify-between bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-300 p-3.5 rounded-xl cursor-pointer transition-all"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="text-neutral-500 bg-neutral-800 p-2 rounded-lg shrink-0">
-                        <MuscleIcon category={ex.target.split(' - ')[0]} className="w-4 h-4" />
+                      <div className="text-slate-400 bg-slate-50 p-2.5 rounded-xl shrink-0">
+                        <MuscleIcon category={ex.target.split(' - ')[0]} className="w-5 h-5" />
                       </div>
                       <div>
-                        <span className="text-neutral-300 text-sm font-medium block">{ex.name}</span>
-                        <span className="text-[10px] text-neutral-500 uppercase">{ex.target}</span>
+                        <span className="text-slate-700 text-sm font-bold block">{ex.name}</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{ex.target}</span>
                       </div>
                     </div>
-                    <div className="w-6 h-6 shrink-0 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 ml-2">
-                      <Plus size={14} />
+                    <div className={`w-8 h-8 shrink-0 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center ${theme.textMain} shadow-sm`}>
+                      <Plus size={16} strokeWidth={3} />
                     </div>
                   </div>
                 ))}
                 {exercises.filter(ex => !selectedExercisesForRoutine.includes(ex.id)).length === 0 && (
-                  <p className="text-xs text-neutral-600 text-center py-4">Wszystkie dostępne ćwiczenia zostały już dodane do tego planu.</p>
+                  <p className="text-sm text-slate-400 text-center py-6 font-medium">Wszystkie ćwiczenia dodane!</p>
                 )}
               </div>
             </div>
@@ -665,7 +537,7 @@ export default function App() {
           <button 
             onClick={saveRoutine}
             disabled={!newRoutineName.trim() || selectedExercisesForRoutine.length === 0}
-            className={`w-full bg-gradient-to-r ${theme.gradMainSec} text-white p-3.5 rounded-xl font-bold flex items-center justify-center gap-2 mt-6 disabled:opacity-50 disabled:grayscale transition-all shadow-lg ${theme.shadowMain20}`}
+            className={`w-full bg-gradient-to-r ${theme.gradMainSec} text-white p-4 rounded-2xl font-bold flex items-center justify-center gap-2 mt-6 disabled:opacity-50 disabled:grayscale transition-all shadow-lg ${theme.shadowMain20} hover:-translate-y-0.5`}
           >
             <Save size={20} /> Zapisz plan
           </button>
@@ -690,12 +562,14 @@ export default function App() {
 
     return (
       <div className="p-4 space-y-6 pb-32">
-        <h2 className="text-2xl font-bold text-neutral-100">Witaj na treningu! 💪</h2>
-        <p className="text-neutral-400">Wybierz plan, aby rozpocząć:</p>
+        <div className="px-2">
+          <h2 className="text-3xl font-black text-slate-800 tracking-tight">Gotowy na trening? 💪</h2>
+          <p className="text-slate-500 font-medium mt-1">Wybierz plan, aby rozpocząć wyciskanie.</p>
+        </div>
         
         <div className="space-y-4">
           {routines.length === 0 ? (
-            <div className="bg-neutral-900 border border-neutral-800 text-neutral-400 p-6 rounded-2xl text-center">
+            <div className="bg-white border border-slate-100 shadow-sm text-slate-500 p-8 rounded-[32px] text-center font-medium">
               Przejdź do zakładki "Plany", aby stworzyć swój pierwszy trening.
             </div>
           ) : (
@@ -703,16 +577,16 @@ export default function App() {
               <button 
                 key={routine.id}
                 onClick={() => startWorkout(routine)}
-                className={`w-full bg-neutral-900 p-5 rounded-2xl shadow-md border border-neutral-800 flex justify-between items-center ${theme.hoverBorderMain50} hover:bg-neutral-800/80 transition-all group text-left`}
+                className={`w-full bg-white p-6 rounded-[32px] shadow-lg shadow-slate-200/50 border border-slate-100 flex justify-between items-center hover:border-slate-300 hover:shadow-xl hover:shadow-slate-200/60 transition-all group text-left`}
               >
                 <div>
-                  <h4 className={`font-bold text-lg text-neutral-200 ${theme.groupHoverTextMain} transition-colors`}>{routine.name}</h4>
-                  <p className="text-sm text-neutral-500 mt-1">
-                    {routine.exercises.length} ćwiczeń • Ostatnio: {getRoutineLastDone(routine.name)}
+                  <h4 className={`font-black text-xl text-slate-800 ${theme.groupHoverTextMain} transition-colors`}>{routine.name}</h4>
+                  <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-wide">
+                    {routine.exercises.length} ćwiczeń • Ostatnio: <span className="text-slate-500">{getRoutineLastDone(routine.name)}</span>
                   </p>
                 </div>
-                <div className={`bg-neutral-950 border border-neutral-800 ${theme.textMain} p-3 rounded-full group-hover:bg-gradient-to-r ${theme.gradHover} group-hover:text-neutral-900 transition-all shadow-lg shadow-transparent ${theme.groupHoverShadowMain20}`}>
-                  <Play size={20} fill="currentColor" />
+                <div className={`bg-slate-50 border border-slate-100 ${theme.textMain} p-4 rounded-2xl group-hover:bg-gradient-to-r ${theme.gradHover} group-hover:text-white transition-all shadow-sm ${theme.groupHoverShadowMain20}`}>
+                  <Play size={24} fill="currentColor" strokeWidth={1} />
                 </div>
               </button>
             ))
@@ -724,39 +598,40 @@ export default function App() {
 
   const SummaryView = () => (
     <div className="p-6 flex flex-col items-center justify-center min-h-full space-y-8 py-12 pb-32">
-      <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center shadow-2xl shadow-emerald-500/30">
-        <Check size={48} className="text-white" strokeWidth={3} />
+      <div className={`w-28 h-28 bg-gradient-to-br ${theme.gradMainSec} rounded-full flex items-center justify-center shadow-2xl ${theme.shadowMain20} border-4 border-white`}>
+        <Check size={56} className="text-white" strokeWidth={3} />
       </div>
       
       <div className="text-center space-y-2">
-        <h2 className="text-3xl font-black text-neutral-100">Świetna robota!</h2>
-        <p className="text-neutral-400">{summaryData.routineName} • {summaryData.date}</p>
+        <h2 className="text-4xl font-black text-slate-800 tracking-tight">Świetna robota!</h2>
+        <p className="text-slate-500 font-bold text-lg">{summaryData.routineName}</p>
+        <p className="text-slate-400 text-sm font-medium">{summaryData.date}</p>
       </div>
 
-      <div className="w-full bg-neutral-900 rounded-3xl p-6 border border-neutral-800 space-y-6 shadow-xl">
-        <div className="flex justify-between items-center border-b border-neutral-800 pb-5">
-          <span className="text-neutral-400 font-medium">Czas trwania</span>
-          <span className="font-black text-2xl text-neutral-100">{summaryData.duration}</span>
+      <div className="w-full bg-white rounded-[32px] p-8 border border-slate-100 space-y-6 shadow-xl shadow-slate-200/50">
+        <div className="flex justify-between items-center border-b border-slate-100 pb-5">
+          <span className="text-slate-400 font-bold uppercase tracking-wide text-xs">Czas trwania</span>
+          <span className="font-black text-2xl text-slate-800">{summaryData.duration}</span>
         </div>
         
-        <div className="flex justify-between items-center border-b border-neutral-800 pb-5">
-          <span className="text-neutral-400 font-medium">Przerzucony ciężar</span>
+        <div className="flex justify-between items-center border-b border-slate-100 pb-5">
+          <span className="text-slate-400 font-bold uppercase tracking-wide text-xs">Przerzucony ciężar</span>
           <span className={`font-black text-3xl text-transparent bg-clip-text bg-gradient-to-r ${theme.gradMainSec}`}>{summaryData.totalVolume} kg</span>
         </div>
 
         <div className="pt-2">
-          <h4 className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-4">Rozbicie na ćwiczenia</h4>
+          <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">Rozbicie na ćwiczenia</h4>
           <div className="space-y-3">
             {summaryData.exerciseSummaries.map((ex, idx) => {
               const exDetails = exercises.find(e => e.name === ex.name);
               const cat = exDetails ? exDetails.target.split(' - ')[0] : '';
               return (
-                <div key={idx} className="flex justify-between items-center bg-neutral-950 p-4 rounded-2xl border border-neutral-800/50">
+                <div key={idx} className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl border border-slate-100">
                   <div className="flex items-center gap-3 overflow-hidden pr-4">
-                    <div className="text-neutral-500 shrink-0"><MuscleIcon category={cat} className="w-4 h-4"/></div>
-                    <span className="text-neutral-300 font-medium truncate">{ex.name}</span>
+                    <div className="text-slate-400 shrink-0 bg-white p-2 rounded-lg shadow-sm"><MuscleIcon category={cat} className="w-4 h-4"/></div>
+                    <span className="text-slate-700 font-bold truncate text-sm">{ex.name}</span>
                   </div>
-                  <span className="text-emerald-500 font-bold whitespace-nowrap bg-emerald-500/10 px-3 py-1 rounded-lg shrink-0">{ex.volume} kg</span>
+                  <span className={`font-black text-sm whitespace-nowrap ${theme.bgMain10} ${theme.textMain} px-3 py-1.5 rounded-xl shrink-0 border ${theme.borderMain20}`}>{ex.volume} kg</span>
                 </div>
               );
             })}
@@ -766,7 +641,7 @@ export default function App() {
 
       <button
         onClick={() => setSummaryData(null)}
-        className="w-full bg-neutral-800 text-neutral-200 py-4 rounded-2xl font-bold hover:bg-neutral-700 hover:text-white transition-colors mt-4"
+        className="w-full bg-slate-800 text-white py-4 rounded-2xl font-bold hover:bg-slate-900 transition-colors mt-4 shadow-lg shadow-slate-300"
       >
         Wróć do strony głównej
       </button>
@@ -798,17 +673,16 @@ export default function App() {
           }
         }
       }
-      return "Brak historii";
+      return "Brak historii dla tego ćwiczenia";
     };
 
     return (
       <div className="pb-32">
-        <div className="sticky top-0 bg-neutral-900/90 backdrop-blur-md border-b border-neutral-800 p-4 shadow-md z-10 flex justify-between items-center rounded-b-[32px]">
+        <div className="sticky top-0 bg-white/80 backdrop-blur-xl border-b border-slate-100 p-4 shadow-sm z-10 flex justify-between items-center rounded-b-[32px]">
           <div className="flex items-center gap-3 overflow-hidden">
             <div 
               onClick={() => setShowEasterEgg(true)}
-              className="w-10 h-10 rounded-full border-2 border-red-600 bg-red-950 overflow-hidden flex items-center justify-center shrink-0 shadow-[0_0_10px_rgba(220,38,38,0.5)] cursor-pointer hover:scale-105 transition-transform"
-              title="Pokaż Easter Egg"
+              className="w-12 h-12 rounded-full border-[3px] border-white bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 shadow-md cursor-pointer hover:scale-105 transition-transform"
             >
               <img 
                 src="image_b14c62.jpg" 
@@ -817,16 +691,15 @@ export default function App() {
               />
             </div>
             <div className="truncate">
-              <p className="text-emerald-500 text-xs font-bold uppercase tracking-wider mb-1">Aktywny trening</p>
-              <h2 className="text-xl font-bold text-neutral-100 truncate">{activeWorkout.routineName}</h2>
+              <p className={`text-[10px] font-black uppercase tracking-widest mb-0.5 ${theme.textMain}`}>Aktywny trening</p>
+              <h2 className="text-xl font-black text-slate-800 truncate">{activeWorkout.routineName}</h2>
             </div>
           </div>
           <button 
             onClick={() => setShowCancelConfirm(true)}
-            className="text-neutral-500 hover:text-red-400 bg-neutral-800/50 hover:bg-red-500/10 p-2 rounded-xl transition-all border border-transparent hover:border-red-500/20 shrink-0 ml-4"
-            title="Wyjdź bez zapisywania"
+            className="text-slate-400 hover:text-red-500 bg-slate-50 hover:bg-red-50 p-3 rounded-full transition-all border border-slate-100 hover:border-red-100 shrink-0 ml-4 shadow-sm"
           >
-            <X size={20} strokeWidth={2.5} />
+            <X size={20} strokeWidth={3} />
           </button>
         </div>
 
@@ -836,30 +709,29 @@ export default function App() {
             if (!exerciseDetails) return null;
 
             return (
-              <div key={exIndex} className="bg-neutral-900 rounded-2xl shadow-lg border border-neutral-800 overflow-hidden">
-                <div className="bg-neutral-800/40 p-4 border-b border-neutral-800 flex justify-between items-center">
+              <div key={exIndex} className="bg-white rounded-[32px] shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden">
+                <div className="bg-slate-50/50 p-5 border-b border-slate-100 flex justify-between items-center">
                   <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-xl bg-neutral-950 border border-neutral-800 flex items-center justify-center ${theme.textMain} shadow-inner shrink-0`}>
+                    <div className={`w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center ${theme.textMain} shadow-sm shrink-0`}>
                       <MuscleIcon category={exerciseDetails.target.split(' - ')[0]} className="w-6 h-6" />
                     </div>
                     <div>
                       <div className="flex items-center gap-3">
-                        <h3 className="font-bold text-neutral-200 text-lg">{exerciseDetails.name}</h3>
+                        <h3 className="font-black text-slate-800 text-lg">{exerciseDetails.name}</h3>
                         <button 
                           onClick={() => toggleChart(exerciseDetails.id)} 
-                          className={`${theme.textSec} ${theme.bgSec10} p-1.5 rounded-xl ${theme.hoverBgSec20} transition-all shadow-sm shrink-0`}
-                          title="Pokaż statystyki i wykres"
+                          className={`${theme.textSec} ${theme.bgSec10} p-2 rounded-xl ${theme.hoverBgSec20} transition-all shadow-sm shrink-0`}
                         >
                           <BarChart2 size={18} strokeWidth={2.5} />
                         </button>
                       </div>
-                      <p className="text-xs text-emerald-500 mt-1 font-medium">{getLastExercisePerformance(exerciseDetails.id)}</p>
+                      <p className={`text-[11px] font-bold uppercase tracking-wider mt-1 ${theme.textMain} opacity-80`}>{getLastExercisePerformance(exerciseDetails.id)}</p>
                     </div>
                   </div>
                 </div>
                 
                 {expandedCharts[exerciseDetails.id] && (
-                  <div className="bg-neutral-900 border-b border-neutral-800 p-4">
+                  <div className="bg-white border-b border-slate-100 p-5">
                     {(() => {
                       const chartData = history
                         .filter(h => h.exercises?.some(e => e.exerciseId === exerciseDetails.id))
@@ -880,7 +752,7 @@ export default function App() {
                         .reverse();
 
                       if (chartData.length === 0) {
-                        return <p className="text-sm text-neutral-500 text-center py-2">Brak zapisanej historii dla tego ćwiczenia.</p>;
+                        return <p className="text-sm text-slate-400 font-medium text-center py-4 bg-slate-50 rounded-2xl border border-slate-100">Brak zapisanej historii dla tego ćwiczenia.</p>;
                       }
 
                       const latest = chartData[chartData.length - 1];
@@ -901,23 +773,23 @@ export default function App() {
 
                       return (
                         <div className="space-y-5">
-                          <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800">
-                            <h4 className="text-xs font-bold text-neutral-400 uppercase mb-3 tracking-wider">Ostatnia sesja ({latest.date})</h4>
+                          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest text-center">Ostatnia sesja ({latest.date})</h4>
                             {latest.sets.length === 0 ? (
-                              <p className="text-xs text-neutral-500">Brak zapisanych poprawnie serii.</p>
+                              <p className="text-xs text-slate-400 text-center font-medium">Brak zapisanych poprawnie serii.</p>
                             ) : (
                               <>
-                                <div className="grid grid-cols-3 gap-2 text-[10px] text-neutral-500 font-bold border-b border-neutral-800 pb-2 mb-2 uppercase tracking-wider">
-                                  <div>Seria</div>
+                                <div className="grid grid-cols-3 gap-2 text-[10px] text-slate-400 font-black border-b border-slate-200 pb-2 mb-3 uppercase tracking-widest">
+                                  <div className="text-center">Seria</div>
                                   <div className="text-center">kg</div>
                                   <div className="text-center">Powt.</div>
                                 </div>
                                 <div className="space-y-2">
                                   {latest.sets.map((s, idx) => (
-                                    <div key={idx} className="grid grid-cols-3 gap-2 text-xs text-neutral-300 py-1">
-                                      <div className="font-bold text-neutral-500">#{idx + 1}</div>
-                                      <div className={`text-center font-bold ${theme.textSec}`}>{s.weight}</div>
-                                      <div className="text-center font-bold text-emerald-500">{s.reps}</div>
+                                    <div key={idx} className="grid grid-cols-3 gap-2 text-xs text-slate-700 py-1 bg-white rounded-lg shadow-sm border border-slate-100">
+                                      <div className="text-center font-black text-slate-400 py-1">#{idx + 1}</div>
+                                      <div className={`text-center font-black ${theme.textSec} py-1`}>{s.weight}</div>
+                                      <div className={`text-center font-black ${theme.textMain} py-1`}>{s.reps}</div>
                                     </div>
                                   ))}
                                 </div>
@@ -925,22 +797,27 @@ export default function App() {
                             )}
                           </div>
 
-                          <div className="bg-neutral-950 p-4 rounded-2xl border border-neutral-800 relative">
+                          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 relative">
                             <div className="flex justify-between items-center mb-4">
-                              <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Historia (max 6)</h4>
-                              <div className="flex gap-3 text-[10px] font-bold">
+                              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Wykres (max 6)</h4>
+                              <div className="flex gap-3 text-[9px] font-black uppercase tracking-wider">
                                 <span className={`${theme.textSec} flex items-center gap-1.5`}>
-                                  <div className={`w-2.5 h-2.5 ${theme.bgSec30} border ${theme.borderSec} rounded-sm`}></div> Śr. kg
+                                  <div className={`w-2.5 h-2.5 ${theme.bgSec30} border ${theme.borderSec} rounded-sm`}></div> ŚR. KG
                                 </span>
-                                <span className="text-emerald-500 flex items-center gap-1.5">
-                                  <div className="w-2.5 h-2.5 bg-emerald-500/30 border border-emerald-500 rounded-sm"></div> Śr. Powt.
+                                <span className={`${theme.textMain} flex items-center gap-1.5`}>
+                                  <div className={`w-2.5 h-2.5 ${theme.bgMain10} border ${theme.borderMain20} rounded-sm`}></div> ŚR. POWT.
                                 </span>
                               </div>
                             </div>
                             
                             <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible mt-2">
-                              <polyline points={pointsLineW} fill="none" stroke={theme.chartSecFill} strokeWidth="1.5" strokeDasharray="4 4" className="opacity-60" />
-                              <polyline points={pointsLineR} fill="none" stroke="#10b981" strokeWidth="1.5" strokeDasharray="4 4" className="opacity-60" />
+                              {/* Soft grid lines */}
+                              <line x1="0" y1={padY} x2={width} y2={padY} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
+                              <line x1="0" y1={padY + chartH/2} x2={width} y2={padY + chartH/2} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
+                              <line x1="0" y1={padY + chartH} x2={width} y2={padY + chartH} stroke="#cbd5e1" strokeWidth="1" />
+
+                              <polyline points={pointsLineW} fill="none" stroke={theme.chartSecFill} strokeWidth="2" strokeDasharray="4 4" className="opacity-40" />
+                              <polyline points={pointsLineR} fill="none" stroke={theme.textMain.replace('text-', '').split('-')[0] === 'emerald' ? '#10b981' : '#f43f5e'} strokeWidth="2" strokeDasharray="4 4" className="opacity-40" />
 
                               {chartData.map((d, i) => {
                                 const x = getX(i);
@@ -953,15 +830,15 @@ export default function App() {
 
                                 return (
                                   <g key={`day-${i}`}>
-                                    <rect x={xW - 5} y={yW} width="10" height={hW} className={`${theme.fillSec20} ${theme.hoverFillSec40} transition-colors cursor-pointer`} rx="2" />
-                                    <circle cx={xW} cy={yW} r="2.5" fill={theme.chartSecFill} />
-                                    <text x={xW} y={yW - 6} fontSize="9" fill={theme.chartSecFill} textAnchor="middle" fontWeight="bold">{Math.round(d.avgW)}</text>
+                                    <rect x={xW - 5} y={yW} width="10" height={hW} className={`${theme.fillSec20} ${theme.hoverFillSec40} transition-colors cursor-pointer`} rx="3" />
+                                    <circle cx={xW} cy={yW} r="3" fill={theme.chartSecFill} stroke="#fff" strokeWidth="1.5" />
+                                    <text x={xW} y={yW - 8} fontSize="9" fill={theme.chartSecFill} textAnchor="middle" fontWeight="bold">{Math.round(d.avgW)}</text>
 
-                                    <rect x={xR - 5} y={yR} width="10" height={hR} className="fill-emerald-500/20 hover:fill-emerald-500/40 transition-colors cursor-pointer" rx="2" />
-                                    <circle cx={xR} cy={yR} r="2.5" fill="#10b981" />
-                                    <text x={xR} y={yR - 6} fontSize="9" fill="#10b981" textAnchor="middle" fontWeight="bold">{Math.round(d.avgR)}</text>
+                                    <rect x={xR - 5} y={yR} width="10" height={hR} className={`${theme.fillMain20} transition-colors cursor-pointer`} rx="3" />
+                                    <circle cx={xR} cy={yR} r="3" fill={theme.textMain.replace('text-', '').split('-')[0] === 'emerald' ? '#10b981' : '#f43f5e'} stroke="#fff" strokeWidth="1.5" />
+                                    <text x={xR} y={yR - 8} fontSize="9" fill={theme.textMain.replace('text-', '').split('-')[0] === 'emerald' ? '#10b981' : '#f43f5e'} textAnchor="middle" fontWeight="bold">{Math.round(d.avgR)}</text>
 
-                                    <text x={x} y={height - 2} fontSize="9" fill="#737373" textAnchor="middle">{d.shortDate}</text>
+                                    <text x={x} y={height - 2} fontSize="9" fill="#94a3b8" textAnchor="middle" fontWeight="bold">{d.shortDate}</text>
                                   </g>
                                 );
                               })}
@@ -973,8 +850,8 @@ export default function App() {
                   </div>
                 )}
 
-                <div className="p-4">
-                  <div className="grid grid-cols-12 gap-2 mb-3 text-xs font-bold text-neutral-500 uppercase tracking-wider px-2">
+                <div className="p-5">
+                  <div className="grid grid-cols-12 gap-2 mb-3 text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">
                     <div className="col-span-2 text-center">Seria</div>
                     <div className="col-span-5 text-center">kg</div>
                     <div className="col-span-5 text-center">Powt.</div>
@@ -984,9 +861,9 @@ export default function App() {
                     {workoutEx.sets.map((set, setIndex) => (
                       <div 
                         key={setIndex} 
-                        className="grid grid-cols-12 gap-2 items-center p-2 rounded-xl transition-all border bg-transparent border-transparent hover:bg-neutral-800/50"
+                        className="grid grid-cols-12 gap-2 items-center p-2 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm"
                       >
-                        <div className="col-span-2 text-center font-bold text-neutral-500">
+                        <div className="col-span-2 text-center font-black text-slate-400">
                           {setIndex + 1}
                         </div>
                         <div className="col-span-5">
@@ -995,7 +872,7 @@ export default function App() {
                             placeholder="-"
                             value={set.weight}
                             onChange={(e) => updateSet(exIndex, setIndex, 'weight', e.target.value)}
-                            className={`w-full text-center p-2 bg-neutral-950 border border-neutral-800 rounded-lg font-semibold text-neutral-200 focus:ring-1 ${theme.focusRingMain} ${theme.focusBorderMain} transition-all outline-none`}
+                            className={`w-full text-center p-2.5 bg-white border border-slate-200 rounded-xl font-black text-slate-800 focus:ring-2 ${theme.focusRingMain} ${theme.focusBorderMain} transition-all outline-none shadow-sm`}
                           />
                         </div>
                         <div className="col-span-5">
@@ -1004,7 +881,7 @@ export default function App() {
                             placeholder="-"
                             value={set.reps}
                             onChange={(e) => updateSet(exIndex, setIndex, 'reps', e.target.value)}
-                            className={`w-full text-center p-2 bg-neutral-950 border border-neutral-800 rounded-lg font-semibold text-neutral-200 focus:ring-1 ${theme.focusRingMain} ${theme.focusBorderMain} transition-all outline-none`}
+                            className={`w-full text-center p-2.5 bg-white border border-slate-200 rounded-xl font-black text-slate-800 focus:ring-2 ${theme.focusRingMain} ${theme.focusBorderMain} transition-all outline-none shadow-sm`}
                           />
                         </div>
                       </div>
@@ -1013,9 +890,9 @@ export default function App() {
 
                   <button 
                     onClick={() => addSet(exIndex)}
-                    className={`mt-5 w-full py-3 text-sm font-bold ${theme.textMain} ${theme.bgMain10} border ${theme.borderMain20} ${theme.hoverBgMain20} rounded-xl flex items-center justify-center gap-2 transition-colors`}
+                    className={`mt-5 w-full py-4 text-sm font-bold ${theme.textMain} bg-white border-2 border-dashed ${theme.borderMain20} hover:border-solid rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm`}
                   >
-                    <Plus size={18} /> Dodaj serię
+                    <Plus size={18} strokeWidth={3} /> Dodaj serię
                   </button>
                 </div>
               </div>
@@ -1027,7 +904,6 @@ export default function App() {
   };
 
   const HistoryView = () => {
-    // Widok szczegółowy wykresu po kliknięciu w ćwiczenie
     if (selectedHistoryExercise) {
       const exerciseId = selectedHistoryExercise;
       const exerciseDetails = exercises.find(e => e.id === exerciseId);
@@ -1086,32 +962,36 @@ export default function App() {
 
       return (
         <div className="p-4 space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 pb-32">
-          <div className="flex items-center justify-between bg-neutral-900 p-4 rounded-2xl shadow-sm border border-neutral-800">
+          <div className="flex items-center justify-between bg-white p-5 rounded-3xl shadow-md shadow-slate-200/50 border border-slate-100">
             <div>
-              <h3 className="font-bold text-lg text-neutral-100">{exerciseDetails?.name}</h3>
-              <p className="text-xs text-neutral-500 uppercase">{exerciseDetails?.target}</p>
+              <h3 className="font-black text-xl text-slate-800">{exerciseDetails?.name}</h3>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">{exerciseDetails?.target}</p>
             </div>
-            <button onClick={() => setSelectedHistoryExercise(null)} className="text-neutral-500 hover:text-white p-2 rounded-xl bg-neutral-800 hover:bg-neutral-700 transition-colors">
-              <X size={20} strokeWidth={2.5} />
+            <button onClick={() => setSelectedHistoryExercise(null)} className="text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 p-3 rounded-2xl transition-colors">
+              <X size={20} strokeWidth={3} />
             </button>
           </div>
 
-          <div className="bg-neutral-900 p-5 rounded-2xl border border-neutral-800 shadow-lg">
-            <div className="flex justify-between items-center mb-4">
-              <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Wykres (max 15)</h4>
-              <div className="flex gap-3 text-[10px] font-bold">
+          <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-xl shadow-slate-200/40">
+            <div className="flex justify-between items-center mb-6">
+              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Wykres (max 15)</h4>
+              <div className="flex gap-3 text-[9px] font-black uppercase tracking-wider">
                 <span className={`${theme.textSec} flex items-center gap-1.5`}>
-                  <div className={`w-2.5 h-2.5 ${theme.bgSec30} border ${theme.borderSec} rounded-sm`}></div> Max kg
+                  <div className={`w-2.5 h-2.5 ${theme.bgSec30} border ${theme.borderSec} rounded-sm`}></div> MAX KG
                 </span>
-                <span className="text-blue-500 flex items-center gap-1.5">
-                  <div className="w-2.5 h-0.5 bg-blue-500"></div> Trend
+                <span className={`${theme.textMain} flex items-center gap-1.5`}>
+                  <div className={`w-2.5 h-0.5 ${theme.bgMain10.replace('bg-', 'bg-').split('/')[0]} border ${theme.borderMain20}`}></div> TREND
                 </span>
               </div>
             </div>
 
             <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible mt-2">
+              <line x1="0" y1={padY} x2={width} y2={padY} stroke="#f1f5f9" strokeWidth="1.5" />
+              <line x1="0" y1={padY + chartH/2} x2={width} y2={padY + chartH/2} stroke="#f1f5f9" strokeWidth="1.5" />
+              <line x1="0" y1={padY + chartH} x2={width} y2={padY + chartH} stroke="#e2e8f0" strokeWidth="1.5" />
+
               {chartData.length > 1 && (
-                <polyline points={trendLinePoints} fill="none" stroke="#3b82f6" strokeWidth="2" strokeDasharray="5 5" className="opacity-80" />
+                <polyline points={trendLinePoints} fill="none" stroke={theme.textMain.replace('text-', '').split('-')[0] === 'emerald' ? '#10b981' : '#fb7185'} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-60 drop-shadow-md" />
               )}
               {chartData.map((d, i) => {
                 const x = getX(i);
@@ -1119,32 +999,32 @@ export default function App() {
                 const yW = padY + chartH - hW;
                 return (
                   <g key={`hist-bar-${i}`}>
-                    <rect x={x - 6} y={yW} width="12" height={hW} className={`${theme.fillSec20} ${theme.hoverFillSec40} transition-colors cursor-pointer`} rx="2" />
-                    <circle cx={x} cy={yW} r="2.5" fill={theme.chartSecFill} />
-                    <text x={x} y={yW - 6} fontSize="9" fill={theme.chartSecFill} textAnchor="middle" fontWeight="bold">{Math.round(d.maxW)}</text>
-                    <text x={x} y={height - 2} fontSize="9" fill="#737373" textAnchor="middle">{d.shortDate}</text>
+                    <rect x={x - 6} y={yW} width="12" height={hW} className={`${theme.fillSec20} ${theme.hoverFillSec40} transition-colors cursor-pointer`} rx="4" />
+                    <circle cx={x} cy={yW} r="3.5" fill={theme.chartSecFill} stroke="#fff" strokeWidth="2" />
+                    <text x={x} y={yW - 8} fontSize="9" fill={theme.chartSecFill} textAnchor="middle" fontWeight="bold">{Math.round(d.maxW)}</text>
+                    <text x={x} y={height - 2} fontSize="9" fill="#94a3b8" textAnchor="middle" fontWeight="bold">{d.shortDate}</text>
                   </g>
                 );
               })}
             </svg>
           </div>
 
-          <div className="space-y-3 pb-6">
-            <h4 className="text-sm font-bold text-neutral-400 uppercase tracking-wider pl-2">Ostatnie 10 treningów</h4>
+          <div className="space-y-4 pb-6">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-4">Ostatnie 10 treningów</h4>
             {listData.map((session, idx) => (
-              <div key={idx} className="bg-neutral-900 rounded-2xl border border-neutral-800 p-4">
-                <p className={`text-xs font-bold ${theme.textMain} mb-3`}>{session.date}</p>
-                <div className="grid grid-cols-3 gap-2 text-[10px] text-neutral-500 font-bold border-b border-neutral-800 pb-2 mb-2 uppercase tracking-wider">
-                  <div>Seria</div>
+              <div key={idx} className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
+                <p className={`text-xs font-black ${theme.textMain} mb-4 uppercase tracking-wider`}>{session.date}</p>
+                <div className="grid grid-cols-3 gap-2 text-[10px] text-slate-400 font-black border-b border-slate-100 pb-2 mb-3 uppercase tracking-widest">
+                  <div className="text-center">Seria</div>
                   <div className="text-center">kg</div>
                   <div className="text-center">Powt.</div>
                 </div>
                 <div className="space-y-2">
                   {session.sets.map((s, sIdx) => (
-                    <div key={sIdx} className="grid grid-cols-3 gap-2 text-xs text-neutral-300 py-1">
-                      <div className="font-bold text-neutral-500">#{sIdx + 1}</div>
-                      <div className={`text-center font-bold ${theme.textSec}`}>{s.weight}</div>
-                      <div className="text-center font-bold text-emerald-500">{s.reps}</div>
+                    <div key={sIdx} className="grid grid-cols-3 gap-2 text-xs text-slate-700 py-1.5 bg-slate-50 rounded-xl">
+                      <div className="text-center font-black text-slate-400">#{sIdx + 1}</div>
+                      <div className={`text-center font-black ${theme.textSec}`}>{s.weight}</div>
+                      <div className={`text-center font-black ${theme.textMain}`}>{s.reps}</div>
                     </div>
                   ))}
                 </div>
@@ -1155,7 +1035,6 @@ export default function App() {
       );
     }
 
-    // Widok listy historycznych ćwiczeń
     const exSet = new Set();
     history.forEach(session => {
       session.exercises?.forEach(ex => {
@@ -1168,12 +1047,14 @@ export default function App() {
 
     return (
       <div className="p-4 space-y-6 pb-32">
-        <h2 className="text-2xl font-bold text-neutral-100">Historia ćwiczeń</h2>
-        <p className="text-neutral-400">Wybierz ćwiczenie, aby zobaczyć swoje postępy.</p>
+        <div className="px-2">
+          <h2 className="text-3xl font-black text-slate-800 tracking-tight">Historia</h2>
+          <p className="text-slate-500 font-medium mt-1">Wybierz ćwiczenie i analizuj postępy.</p>
+        </div>
         
         <div className="space-y-3">
           {performedExercises.length === 0 ? (
-            <div className="bg-neutral-900 border border-neutral-800 text-neutral-400 p-6 rounded-2xl text-center">
+            <div className="bg-white border border-slate-100 text-slate-500 p-8 rounded-[32px] text-center font-medium shadow-sm">
               Brak historii. Wykonaj swój pierwszy trening!
             </div>
           ) : (
@@ -1181,18 +1062,20 @@ export default function App() {
               <button 
                 key={ex.id} 
                 onClick={() => setSelectedHistoryExercise(ex.id)}
-                className={`w-full flex items-center justify-between bg-neutral-900 p-4 rounded-xl shadow-sm border border-neutral-800 ${theme.hoverBorderMain50} hover:bg-neutral-800/80 transition-colors group`}
+                className={`w-full flex items-center justify-between bg-white p-5 rounded-[28px] shadow-sm border border-slate-100 hover:border-slate-300 hover:shadow-md transition-all group`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-xl bg-neutral-950 border border-neutral-800 flex items-center justify-center ${theme.textMain} shadow-inner shrink-0`}>
+                  <div className={`w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center ${theme.textMain} shadow-sm shrink-0`}>
                     <MuscleIcon category={ex.target.split(' - ')[0]} className="w-6 h-6" />
                   </div>
                   <div className="text-left">
-                    <p className={`font-medium text-neutral-200 leading-tight mb-1 ${theme.groupHoverTextMain} transition-colors`}>{ex.name}</p>
-                    <p className="text-[11px] font-bold tracking-wide text-neutral-500 uppercase">{ex.target}</p>
+                    <p className={`font-bold text-lg text-slate-800 leading-tight mb-1 ${theme.groupHoverTextMain} transition-colors`}>{ex.name}</p>
+                    <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase">{ex.target}</p>
                   </div>
                 </div>
-                <ChevronRight className="text-neutral-600 group-hover:text-neutral-400 transition-colors" size={20} />
+                <div className="bg-slate-50 p-2 rounded-xl group-hover:bg-slate-100 transition-colors">
+                  <ChevronRight className="text-slate-400" size={20} strokeWidth={2.5} />
+                </div>
               </button>
             ))
           )}
@@ -1202,40 +1085,45 @@ export default function App() {
   };
 
   const LoginModal = () => (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 backdrop-blur-md p-6">
-      <div className="bg-neutral-900 border border-neutral-800 p-8 rounded-[32px] w-full max-w-sm space-y-4 shadow-2xl">
-        <div className="flex justify-between items-center mb-2"><h3 className="text-xl font-bold text-white">Chmura Ronniego</h3><button onClick={() => setShowLoginModal(false)}><X className="text-neutral-500" /></button></div>
-        <p className="text-sm text-neutral-400">Zaloguj się, aby synchronizować Historię i Plany między urządzeniami.</p>
-        <input type="email" placeholder="E-mail" className="w-full p-4 bg-neutral-950 border border-neutral-800 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" value={email} onChange={e => setEmail(e.target.value)} />
-        <input type="password" placeholder="Hasło" className="w-full p-4 bg-neutral-950 border border-neutral-800 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500" value={password} onChange={e => setPassword(e.target.value)} />
-        {authError && <p className="text-xs text-red-500">{authError}</p>}
-        <div className="flex gap-3 pt-2">
-          <button onClick={() => handleAuth('login')} className="flex-1 bg-emerald-600 p-4 rounded-2xl font-bold">Zaloguj</button>
-          <button onClick={() => handleAuth('register')} className="flex-1 bg-neutral-800 p-4 rounded-2xl font-bold">Załóż konto</button>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
+      <div className="bg-white p-8 rounded-[32px] w-full max-w-sm space-y-5 shadow-2xl">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-2xl font-black text-slate-800 tracking-tight">Chmura</h3>
+          <button onClick={() => setShowLoginModal(false)} className="bg-slate-50 p-2 rounded-full text-slate-400 hover:text-slate-700 transition-colors"><X size={20} strokeWidth={3} /></button>
+        </div>
+        <p className="text-sm font-medium text-slate-500">Zaloguj się, aby synchronizować Historię i Plany między urządzeniami.</p>
+        <div className="space-y-3">
+          <input type="email" placeholder="E-mail" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800 outline-none focus:ring-2 focus:ring-slate-300 placeholder-slate-400" value={email} onChange={e => setEmail(e.target.value)} />
+          <input type="password" placeholder="Hasło" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800 outline-none focus:ring-2 focus:ring-slate-300 placeholder-slate-400" value={password} onChange={e => setPassword(e.target.value)} />
+        </div>
+        {authError && <p className="text-xs font-bold text-rose-500 bg-rose-50 p-3 rounded-xl">{authError}</p>}
+        <div className="flex gap-3 pt-4">
+          <button onClick={() => handleAuth('login')} className="flex-1 bg-slate-800 text-white p-4 rounded-2xl font-bold shadow-lg shadow-slate-300 hover:-translate-y-0.5 transition-all">Zaloguj</button>
+          <button onClick={() => handleAuth('register')} className="flex-1 bg-slate-100 text-slate-700 p-4 rounded-2xl font-bold hover:bg-slate-200 transition-colors">Załóż konto</button>
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="h-[100dvh] w-full bg-[#0a0a0a] flex justify-center font-sans text-neutral-200 overflow-hidden">
-      <div className="w-full max-w-md bg-neutral-950 h-full relative shadow-2xl flex flex-col border-x border-neutral-900 overflow-hidden">
+    <div className="h-[100dvh] w-full bg-[#f0f4f8] flex justify-center font-sans text-slate-800 overflow-hidden">
+      <div className="w-full max-w-md bg-[#fafafa] h-full relative shadow-[0_0_50px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden">
         
         {showLoginModal && <LoginModal />}
 
         {!activeWorkout && !summaryData && (
-          <header className="bg-neutral-900/80 backdrop-blur-xl p-4 border-b border-neutral-800 flex justify-between items-center shrink-0 z-10 rounded-b-[32px] shadow-lg shadow-black/20">
+          <header className="bg-white/80 backdrop-blur-2xl p-4 border-b border-slate-100 flex justify-between items-center shrink-0 z-10 rounded-b-[32px] shadow-sm">
             <div className="flex items-center gap-3">
-              <div onClick={() => setShowEasterEgg(true)} className="w-11 h-11 rounded-full border-2 border-red-600 bg-red-950 overflow-hidden flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(220,38,38,0.5)] cursor-pointer">
+              <div onClick={() => setShowEasterEgg(true)} className="w-12 h-12 rounded-full border-[3px] border-white bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 shadow-md cursor-pointer hover:scale-105 transition-transform">
                 <img src="image_b14c62.jpg" alt="Ronnie" className="w-full h-full object-cover object-[center_15%] scale-125" />
               </div>
-              <button onClick={user ? handleLogout : () => setShowLoginModal(true)} className={`p-2 rounded-xl border ${user ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500' : 'border-neutral-700 bg-neutral-800/50 text-neutral-500'}`}>
-                {user ? <LogOut size={18} /> : <CloudOff size={18} />}
+              <button onClick={user ? handleLogout : () => setShowLoginModal(true)} className={`p-2.5 rounded-2xl border transition-colors ${user ? `${theme.borderMain20} ${theme.bgMain10} ${theme.textMain}` : 'border-slate-200 bg-slate-50 text-slate-400 hover:text-slate-600'}`}>
+                {user ? <LogOut size={20} strokeWidth={2.5} /> : <CloudOff size={20} strokeWidth={2.5} />}
               </button>
             </div>
-            <div className="flex gap-3 shrink-0 ml-4">
-              <button onClick={() => setCurrentUser('turtle')} className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-xl transition-all ${currentUser === 'turtle' ? 'border-lime-500 bg-lime-500/20 scale-110' : 'border-neutral-700 bg-neutral-800/50 opacity-60'}`}>🐢</button>
-              <button onClick={() => setCurrentUser('blonde')} className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-xl transition-all ${currentUser === 'blonde' ? 'border-pink-500 bg-pink-500/20 scale-110' : 'border-neutral-700 bg-neutral-800/50 opacity-60'}`}>👱‍♀️</button>
+            <div className="flex gap-3 shrink-0 ml-4 bg-slate-50 p-1.5 rounded-full border border-slate-100">
+              <button onClick={() => setCurrentUser('turtle')} className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all ${currentUser === 'turtle' ? 'bg-white shadow-sm scale-110' : 'opacity-50 grayscale hover:grayscale-0'}`}>🐢</button>
+              <button onClick={() => setCurrentUser('blonde')} className={`w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all ${currentUser === 'blonde' ? 'bg-white shadow-sm scale-110' : 'opacity-50 grayscale hover:grayscale-0'}`}>👱‍♀️</button>
             </div>
           </header>
         )}
@@ -1257,49 +1145,55 @@ export default function App() {
 
         {activeWorkout && !summaryData && (
           <div className="fixed bottom-10 left-0 right-0 flex justify-center pointer-events-none z-30">
-            <button onClick={() => setShowFinishConfirm(true)} className="pointer-events-auto bg-emerald-600 px-8 py-4 rounded-full font-bold shadow-2xl flex items-center gap-3"><Check size={24} /> Zakończ</button>
+            <button onClick={() => setShowFinishConfirm(true)} className={`pointer-events-auto bg-gradient-to-r ${theme.gradMainSec} text-white px-8 py-5 rounded-full font-bold shadow-xl ${theme.shadowMain20} flex items-center gap-3 hover:scale-105 hover:-translate-y-1 transition-all border-4 border-white`}>
+              <Check size={24} strokeWidth={3.5} /> Zakończ trening
+            </button>
           </div>
         )}
 
         {!activeWorkout && !summaryData && (
-          <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center px-4 pointer-events-none">
-            <nav className="w-full max-w-sm bg-neutral-900/40 backdrop-blur-2xl border border-white/5 rounded-full shadow-2xl pointer-events-auto relative">
-              <div className={`absolute inset-0 bg-gradient-to-t ${theme.navGrad} to-transparent opacity-30 pointer-events-none`}></div>
-              <div className="flex justify-around p-2 relative z-10">
-                <button onClick={() => setActiveTab('workout')} className={`flex-1 flex flex-col items-center p-2.5 rounded-full ${activeTab === 'workout' ? theme.textMain : 'text-neutral-500'}`}><Play size={22} /><span className="text-[9px] font-bold mt-1">Trening</span></button>
-                <button onClick={() => setActiveTab('routines')} className={`flex-1 flex flex-col items-center p-2.5 rounded-full ${activeTab === 'routines' ? theme.textMain : 'text-neutral-500'}`}><List size={22} /><span className="text-[9px] font-bold mt-1">Plany</span></button>
-                <button onClick={() => setActiveTab('history')} className={`flex-1 flex flex-col items-center p-2.5 rounded-full ${activeTab === 'history' ? theme.textMain : 'text-neutral-500'}`}><History size={22} /><span className="text-[9px] font-bold mt-1">Historia</span></button>
-                <button onClick={() => setActiveTab('library')} className={`flex-1 flex flex-col items-center p-2.5 rounded-full ${activeTab === 'library' ? theme.textMain : 'text-neutral-500'}`}><Dumbbell size={22} /><span className="text-[9px] font-bold mt-1">Biblioteka</span></button>
+          <div className="absolute bottom-6 left-0 right-0 z-20 flex justify-center px-6 pointer-events-none">
+            <nav className="w-full max-w-sm bg-white/90 backdrop-blur-2xl border border-slate-100 rounded-[32px] shadow-[0_10px_40px_rgba(0,0,0,0.06)] pointer-events-auto p-1.5 relative overflow-hidden">
+              <div className={`absolute inset-0 bg-gradient-to-t ${theme.navGrad} to-transparent opacity-20 pointer-events-none`}></div>
+              <div className="flex justify-around relative z-10">
+                <button onClick={() => setActiveTab('workout')} className={`flex-1 flex flex-col items-center justify-center py-3 rounded-[24px] transition-all duration-300 ${activeTab === 'workout' ? `${theme.textMain} ${theme.bgMain10} shadow-sm border border-white` : 'text-slate-400 hover:text-slate-600'}`}><Play size={24} strokeWidth={activeTab === 'workout' ? 2.5 : 2} className={activeTab === 'workout' ? theme.fillMain20 : ''} /><span className="text-[9px] font-black mt-1.5 uppercase tracking-widest">Trening</span></button>
+                <button onClick={() => setActiveTab('routines')} className={`flex-1 flex flex-col items-center justify-center py-3 rounded-[24px] transition-all duration-300 ${activeTab === 'routines' ? `${theme.textMain} ${theme.bgMain10} shadow-sm border border-white` : 'text-slate-400 hover:text-slate-600'}`}><List size={24} strokeWidth={activeTab === 'routines' ? 2.5 : 2} /><span className="text-[9px] font-black mt-1.5 uppercase tracking-widest">Plany</span></button>
+                <button onClick={() => setActiveTab('history')} className={`flex-1 flex flex-col items-center justify-center py-3 rounded-[24px] transition-all duration-300 ${activeTab === 'history' ? `${theme.textMain} ${theme.bgMain10} shadow-sm border border-white` : 'text-slate-400 hover:text-slate-600'}`}><History size={24} strokeWidth={activeTab === 'history' ? 2.5 : 2} className={activeTab === 'history' ? theme.fillMain20 : ''} /><span className="text-[9px] font-black mt-1.5 uppercase tracking-widest">Historia</span></button>
+                <button onClick={() => setActiveTab('library')} className={`flex-1 flex flex-col items-center justify-center py-3 rounded-[24px] transition-all duration-300 ${activeTab === 'library' ? `${theme.textMain} ${theme.bgMain10} shadow-sm border border-white` : 'text-slate-400 hover:text-slate-600'}`}><Dumbbell size={24} strokeWidth={activeTab === 'library' ? 2.5 : 2} className={activeTab === 'library' ? theme.fillMain20 : ''} /><span className="text-[9px] font-black mt-1.5 uppercase tracking-widest">Biblioteka</span></button>
               </div>
             </nav>
           </div>
         )}
 
         {showFinishConfirm && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl w-full max-w-sm flex flex-col">
-              <h3 className="text-xl font-bold text-neutral-100 mb-2">Zakończyć?</h3>
-              <div className="flex gap-3 mt-6"><button onClick={() => setShowFinishConfirm(false)} className="flex-1 py-3 rounded-xl bg-neutral-800">Anuluj</button><button onClick={finishWorkout} className="flex-1 py-3 rounded-xl bg-emerald-600 font-bold">Zakończ</button></div>
-              <button onClick={() => { setActiveWorkout(null); setShowFinishConfirm(false); }} className="mt-5 text-sm text-neutral-500 hover:text-red-400">Wyjdź bez zapisu</button>
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
+            <div className="bg-white p-8 rounded-[32px] w-full max-w-sm flex flex-col shadow-2xl">
+              <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Zakończyć?</h3>
+              <p className="text-slate-500 font-medium">Czy na pewno chcesz zakończyć i podsumować obecny trening?</p>
+              <div className="flex gap-3 mt-6"><button onClick={() => setShowFinishConfirm(false)} className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors">Wróć</button><button onClick={finishWorkout} className={`flex-1 py-4 rounded-2xl bg-gradient-to-r ${theme.gradMainSec} text-white font-bold shadow-lg ${theme.shadowMain20}`}>Zakończ</button></div>
+              <button onClick={() => { setActiveWorkout(null); setShowFinishConfirm(false); }} className="mt-6 text-sm font-bold text-slate-400 hover:text-rose-500 transition-colors">Wyjdź bez zapisu</button>
             </div>
           </div>
         )}
 
         {showCancelConfirm && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-            <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl w-full max-w-sm flex flex-col">
-              <h3 className="text-xl font-bold text-neutral-100 mb-2">Przerwać?</h3>
-              <div className="flex gap-3 mt-6"><button onClick={() => setShowCancelConfirm(false)} className="flex-1 py-3 rounded-xl bg-neutral-800">Wróć</button><button onClick={() => { setActiveWorkout(null); setShowCancelConfirm(false); }} className="flex-1 py-3 rounded-xl bg-red-600 font-bold">Przerwij</button></div>
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
+            <div className="bg-white p-8 rounded-[32px] w-full max-w-sm flex flex-col shadow-2xl">
+              <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Przerwać?</h3>
+              <p className="text-slate-500 font-medium">Dzisiejsze wyniki zostaną usunięte bezpowrotnie.</p>
+              <div className="flex gap-3 mt-6"><button onClick={() => setShowCancelConfirm(false)} className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors">Wróć</button><button onClick={() => { setActiveWorkout(null); setShowCancelConfirm(false); }} className="flex-1 py-4 rounded-2xl bg-rose-500 text-white font-bold shadow-lg shadow-rose-500/30">Przerwij</button></div>
             </div>
           </div>
         )}
 
         {showEasterEgg && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/95 backdrop-blur-md p-4">
-            <button onClick={() => setShowEasterEgg(false)} className="absolute top-6 right-6 text-neutral-400"><X size={28} /></button>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/90 backdrop-blur-md p-6">
+            <button onClick={() => setShowEasterEgg(false)} className="absolute top-8 right-8 text-white/50 hover:text-white bg-white/10 p-3 rounded-full backdrop-blur-lg"><X size={28} /></button>
             <div className="flex flex-col items-center max-w-lg w-full">
-              <img src="image_b14c62.jpg" alt="YEAH BUDDY" className="w-full h-auto rounded-2xl border border-neutral-800" />
-              <p className="mt-8 text-5xl font-black text-red-600 italic text-center uppercase">YEAH BUDDY! 💪</p>
+              <div className="p-2 bg-white/10 rounded-[32px] backdrop-blur-md">
+                <img src="image_b14c62.jpg" alt="YEAH BUDDY" className="w-full h-auto rounded-[24px] shadow-2xl" />
+              </div>
+              <p className="mt-10 text-5xl font-black text-white italic text-center uppercase tracking-widest drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">YEAH BUDDY! 💪</p>
             </div>
           </div>
         )}
