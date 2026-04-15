@@ -193,18 +193,16 @@ export default function App() {
       } else {
         // DLA TWOJEGO VERCELA - WPISZ TUTAJ SWOJE KLUCZE Z FIREBASE!
         // Zmień linijkę `config = null;` na swój obiekt, tak jak w komentarzu poniżej:
-        config = null; 
-        
-        /* PRZYKŁAD, jak powinno to wyglądać:
+       
         config = {
-          apiKey: "AIzaSyTwojTajnyKlucz...",
-          authDomain: "ronnie-gym.firebaseapp.com",
-          projectId: "ronnie-gym",
-          storageBucket: "ronnie-gym.appspot.com",
-          messagingSenderId: "123456789",
-          appId: "1:123456789:web:abcdefgh"
-        };
-        */
+          apiKey: "AIzaSyDS1P1H4IrXG6CCU3kIQ4LZcKtEypgEIIc",
+          authDomain: "ronnie-silka.firebaseapp.com",
+          projectId: "ronnie-silka",
+          storageBucket: "ronnie-silka.firebasestorage.app",
+          messagingSenderId: "225312176403",
+          appId: "1:225312176403:web:3416595fe94083b60f02e6"
+        }; 
+
       }
 
       if (config && config.apiKey) {
