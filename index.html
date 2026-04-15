@@ -2,28 +2,35 @@
 <html lang="pl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Lightweight Babyyy</title>
     
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#0a0a0a" />
-    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <meta name="theme-color" content="#f0f4f8" />
+    
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
-      /* To jest "tajny składnik" poprawnego przewijania na komórce */
       html, body {
         margin: 0;
         padding: 0;
         height: 100%;
-        overflow: hidden; /* Blokujemy przewijanie całej strony */
-        background-color: #f0f4f8;
+        overflow: hidden;
+        /* Ten kolor musi się zgadzać z theme-color powyżej */
+        background-color: #f0f4f8; 
       }
       #root {
         height: 100%;
+      }
+      /* Opcjonalne: jeśli masz iPhone'a z notchem, to zapobiega ucinaniu góry przez pasek stanu */
+      header {
+        padding-top: env(safe-area-inset-top);
       }
     </style>
   </head>
