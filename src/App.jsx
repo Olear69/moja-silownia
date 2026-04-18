@@ -156,6 +156,13 @@ export default function App() {
   const [expandedCharts, setExpandedCharts] = useState({});
   const [selectedHistoryExercise, setSelectedHistoryExercise] = useState(null);
 
+  // --- NOWE STANY DO POTWIERDZEŃ W UI ---
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [logoutText, setLogoutText] = useState('');
+  const [exerciseToDelete, setExerciseToDelete] = useState(null);
+  const [routineToDelete, setRoutineToDelete] = useState(null);
+  const [historySetToDelete, setHistorySetToDelete] = useState(null);
+
   const [db, setDb] = useState(null);
   const [auth, setAuth] = useState(null);
   const isCloudUpdate = useRef(false);
@@ -236,6 +243,29 @@ export default function App() {
   const handleLogout = () => {
     if (auth) signOut(auth);
     setUser(null);
+  };
+
+  const confirmDeleteHistorySet = () => {
+    if (!historySetToDelete) return;
+    const { sessionId, exerciseId, setIndex } = historySetToDelete;
+
+    const updatedHistory = history.map(session => {
+      if (session.id === sessionId) {
+        const updatedExercises = session.exercises.map(ex => {
+          if (ex.exerciseId === exerciseId) {
+            const newSets = [...ex.sets];
+            newSets.splice(setIndex, 1);
+            return { ...ex, sets: newSets };
+          }
+          return ex;
+        });
+        return { ...session, exercises: updatedExercises };
+      }
+      return session;
+    });
+
+    setHistory(updatedHistory);
+    setHistorySetToDelete(null);
   };
 
   const [newExerciseName, setNewExerciseName] = useState('');
@@ -424,7 +454,7 @@ export default function App() {
                   <p className="text-[11px] font-bold tracking-wider text-slate-400 uppercase">{ex.target}</p>
                 </div>
               </div>
-              <button onClick={() => deleteExercise(ex.id)} className="text-slate-400 p-2 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors ml-2 shrink-0">
+              <button onClick={() => setExerciseToDelete(ex.id)} className="text-slate-400 p-2 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors ml-2 shrink-0">
                 <Trash2 size={18} />
               </button>
             </div>
@@ -460,7 +490,7 @@ export default function App() {
                     <button onClick={() => openRoutineEditor(routine)} className={`text-slate-400 p-3 bg-slate-50 hover:bg-slate-100 ${theme.hoverTextMain} rounded-2xl transition-colors`}>
                       <Pencil size={20} />
                     </button>
-                    <button onClick={() => deleteRoutine(routine.id)} className="text-slate-400 p-3 bg-slate-50 hover:bg-red-50 hover:text-red-500 rounded-2xl transition-colors">
+                    <button onClick={() => setRoutineToDelete(routine.id)} className="text-slate-400 p-3 bg-slate-50 hover:bg-red-50 hover:text-red-500 rounded-2xl transition-colors">
                       <Trash2 size={20} />
                     </button>
                   </div>
@@ -1003,8 +1033,11 @@ export default function App() {
         .filter(session => session.exercises?.some(e => e.exerciseId === exerciseId))
         .map(session => {
           const exData = session.exercises.find(e => e.exerciseId === exerciseId);
-          const validSets = exData.sets.filter(s => parseFloat(String(s.weight).replace(',', '.')) > 0 && parseInt(s.reps) > 0);
+          const validSets = exData.sets
+            .map((s, originalIndex) => ({ ...s, originalIndex }))
+            .filter(s => parseFloat(String(s.weight).replace(',', '.')) > 0 && parseInt(s.reps) > 0);
           return {
+            id: session.id,
             date: session.date,
             shortDate: new Date(session.timestamp).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' }),
             maxW: validSets.length ? Math.max(...validSets.map(s => parseFloat(String(s.weight).replace(',', '.')))) : 0,
@@ -1103,17 +1136,20 @@ export default function App() {
             {listData.map((session, idx) => (
               <div key={idx} className="bg-white rounded-3xl border border-slate-100 shadow-sm p-5">
                 <p className={`text-xs font-black ${theme.textMain} mb-4 uppercase tracking-wider`}>{session.date}</p>
-                <div className="grid grid-cols-3 gap-2 text-[10px] text-slate-400 font-black border-b border-slate-100 pb-2 mb-3 uppercase tracking-widest">
-                  <div className="text-center">Seria</div>
-                  <div className="text-center">kg</div>
-                  <div className="text-center">Powt.</div>
+                <div className="grid grid-cols-12 gap-2 text-[10px] text-slate-400 font-black border-b border-slate-100 pb-2 mb-3 uppercase tracking-widest pr-8">
+                  <div className="col-span-3 text-center">Seria</div>
+                  <div className="col-span-4 text-center">kg</div>
+                  <div className="col-span-5 text-center">Powt.</div>
                 </div>
                 <div className="space-y-2">
                   {session.sets.map((s, sIdx) => (
-                    <div key={sIdx} className="grid grid-cols-3 gap-2 text-xs text-slate-700 py-1.5 bg-slate-50 rounded-xl">
-                      <div className="text-center font-black text-slate-400">#{sIdx + 1}</div>
-                      <div className={`text-center font-black ${theme.textSec}`}>{s.weight}</div>
-                      <div className={`text-center font-black ${theme.textMain}`}>{s.reps}</div>
+                    <div key={sIdx} className="grid grid-cols-12 gap-2 text-xs text-slate-700 py-1.5 bg-slate-50 rounded-xl items-center relative pr-8">
+                      <div className="col-span-3 text-center font-black text-slate-400">#{sIdx + 1}</div>
+                      <div className={`col-span-4 text-center font-black ${theme.textSec}`}>{s.weight}</div>
+                      <div className={`col-span-5 text-center font-black ${theme.textMain}`}>{s.reps}</div>
+                      <button onClick={() => setHistorySetToDelete({ sessionId: session.id, exerciseId, setIndex: s.originalIndex })} className="absolute right-2 text-slate-300 hover:text-rose-500 transition-colors p-1">
+                        <Trash2 size={14} strokeWidth={2.5} />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -1173,32 +1209,31 @@ export default function App() {
     );
   };
 
-  const LoginModal = () => (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
-      <div className="bg-white p-8 rounded-[32px] w-full max-w-sm space-y-5 shadow-2xl">
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="text-2xl font-black text-slate-800 tracking-tight">Chmura</h3>
-          <button onClick={() => setShowLoginModal(false)} className="bg-slate-50 p-2 rounded-full text-slate-400 hover:text-slate-700 transition-colors"><X size={20} strokeWidth={3} /></button>
-        </div>
-        <p className="text-sm font-medium text-slate-500">Zaloguj się, aby synchronizować Historię i Plany między urządzeniami.</p>
-        <div className="space-y-3">
-          <input type="email" placeholder="E-mail" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800 outline-none focus:ring-2 focus:ring-slate-300 placeholder-slate-400" value={email} onChange={e => setEmail(e.target.value)} />
-          <input type="password" placeholder="Hasło" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800 outline-none focus:ring-2 focus:ring-slate-300 placeholder-slate-400" value={password} onChange={e => setPassword(e.target.value)} />
-        </div>
-        {authError && <p className="text-xs font-bold text-rose-500 bg-rose-50 p-3 rounded-xl">{authError}</p>}
-        <div className="flex gap-3 pt-4">
-          <button onClick={() => handleAuth('login')} className="flex-1 bg-slate-800 text-white p-4 rounded-2xl font-bold shadow-lg shadow-slate-300 hover:-translate-y-0.5 transition-all">Zaloguj</button>
-          <button onClick={() => handleAuth('register')} className="flex-1 bg-slate-100 text-slate-700 p-4 rounded-2xl font-bold hover:bg-slate-200 transition-colors">Załóż konto</button>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="h-[100dvh] w-full bg-[#f0f4f8] flex justify-center font-sans text-slate-800 overflow-hidden">
       <div className="w-full max-w-md bg-[#fafafa] h-full relative shadow-[0_0_50px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden">
         
-        {showLoginModal && <LoginModal />}
+        {/* INLINED LOGIN MODAL (Rozwiązuje problem zamykającej się klawiatury) */}
+        {showLoginModal && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
+            <div className="bg-white p-8 rounded-[32px] w-full max-w-sm space-y-5 shadow-2xl">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-2xl font-black text-slate-800 tracking-tight">Chmura</h3>
+                <button onClick={() => setShowLoginModal(false)} className="bg-slate-50 p-2 rounded-full text-slate-400 hover:text-slate-700 transition-colors"><X size={20} strokeWidth={3} /></button>
+              </div>
+              <p className="text-sm font-medium text-slate-500">Zaloguj się, aby synchronizować Historię i Plany między urządzeniami.</p>
+              <div className="space-y-3">
+                <input type="email" placeholder="E-mail" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800 outline-none focus:ring-2 focus:ring-slate-300 placeholder-slate-400" value={email} onChange={e => setEmail(e.target.value)} />
+                <input type="password" placeholder="Hasło" className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800 outline-none focus:ring-2 focus:ring-slate-300 placeholder-slate-400" value={password} onChange={e => setPassword(e.target.value)} />
+              </div>
+              {authError && <p className="text-xs font-bold text-rose-500 bg-rose-50 p-3 rounded-xl">{authError}</p>}
+              <div className="flex gap-3 pt-4">
+                <button onClick={() => handleAuth('login')} className="flex-1 bg-slate-800 text-white p-4 rounded-2xl font-bold shadow-lg shadow-slate-300 hover:-translate-y-0.5 transition-all">Zaloguj</button>
+                <button onClick={() => handleAuth('register')} className="flex-1 bg-slate-100 text-slate-700 p-4 rounded-2xl font-bold hover:bg-slate-200 transition-colors">Załóż konto</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {!activeWorkout && !summaryData && (
           <header className="bg-white/80 backdrop-blur-2xl p-4 border-b border-slate-100 flex justify-between items-center shrink-0 z-10 rounded-b-[32px] shadow-sm">
@@ -1206,7 +1241,7 @@ export default function App() {
               <div onClick={() => setShowEasterEgg(true)} className="w-12 h-12 rounded-full border-[3px] border-white bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 shadow-md cursor-pointer hover:scale-105 transition-transform">
                 <img src="image_b14c62.jpg" alt="Ronnie" className="w-full h-full object-cover object-[center_15%] scale-125" />
               </div>
-              <button onClick={user ? handleLogout : () => setShowLoginModal(true)} className={`p-2.5 rounded-2xl border transition-colors ${user ? `${theme.borderMain20} ${theme.bgMain10} ${theme.textMain}` : 'border-slate-200 bg-slate-50 text-slate-400 hover:text-slate-600'}`}>
+              <button onClick={user ? () => setShowLogoutConfirm(true) : () => setShowLoginModal(true)} className={`p-2.5 rounded-2xl border transition-colors ${user ? `${theme.borderMain20} ${theme.bgMain10} ${theme.textMain}` : 'border-slate-200 bg-slate-50 text-slate-400 hover:text-slate-600'}`}>
                 {user ? <LogOut size={20} strokeWidth={2.5} /> : <CloudOff size={20} strokeWidth={2.5} />}
               </button>
             </div>
@@ -1271,6 +1306,79 @@ export default function App() {
               <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Przerwać?</h3>
               <p className="text-slate-500 font-medium">Dzisiejsze wyniki zostaną usunięte bezpowrotnie.</p>
               <div className="flex gap-3 mt-6"><button onClick={() => setShowCancelConfirm(false)} className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors">Wróć</button><button onClick={() => { setActiveWorkout(null); setShowCancelConfirm(false); }} className="flex-1 py-4 rounded-2xl bg-rose-500 text-white font-bold shadow-lg shadow-rose-500/30">Przerwij</button></div>
+            </div>
+          </div>
+        )}
+
+        {/* MODALE POTWIERDZEŃ - Wylogowanie, Usuwanie */}
+        {showLogoutConfirm && (
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
+            <div className="bg-white p-8 rounded-[32px] w-full max-w-sm flex flex-col shadow-2xl">
+              <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Wylogowywanie</h3>
+              <p className="text-slate-500 font-medium mb-4">Aby wylogować się z chmury, wpisz poniżej literę <strong className="text-slate-800">x</strong>.</p>
+              <input
+                type="text"
+                placeholder="Wpisz x..."
+                value={logoutText}
+                onChange={(e) => setLogoutText(e.target.value)}
+                className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-800 outline-none focus:ring-2 focus:ring-slate-300 placeholder-slate-400 text-center uppercase"
+                maxLength={1}
+              />
+              <div className="flex gap-3 mt-6">
+                <button onClick={() => { setShowLogoutConfirm(false); setLogoutText(''); }} className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors">Wróć</button>
+                <button
+                  onClick={() => {
+                    if (logoutText.toLowerCase() === 'x') {
+                      handleLogout();
+                      setShowLogoutConfirm(false);
+                      setLogoutText('');
+                    }
+                  }}
+                  disabled={logoutText.toLowerCase() !== 'x'}
+                  className="flex-1 py-4 rounded-2xl bg-slate-800 text-white font-bold shadow-lg shadow-slate-300 transition-all disabled:opacity-50 disabled:shadow-none"
+                >
+                  Wyloguj
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {exerciseToDelete && (
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
+            <div className="bg-white p-8 rounded-[32px] w-full max-w-sm flex flex-col shadow-2xl">
+              <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Usunąć ćwiczenie?</h3>
+              <p className="text-slate-500 font-medium">Czy na pewno chcesz usunąć to ćwiczenie z biblioteki? (Zapisana historia pozostanie bezpieczna)</p>
+              <div className="flex gap-3 mt-6">
+                <button onClick={() => setExerciseToDelete(null)} className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors">Anuluj</button>
+                <button onClick={() => { deleteExercise(exerciseToDelete); setExerciseToDelete(null); }} className="flex-1 py-4 rounded-2xl bg-rose-500 text-white font-bold shadow-lg shadow-rose-500/30">Usuń</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {routineToDelete && (
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
+            <div className="bg-white p-8 rounded-[32px] w-full max-w-sm flex flex-col shadow-2xl">
+              <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Usunąć plan?</h3>
+              <p className="text-slate-500 font-medium">Czy na pewno chcesz bezpowrotnie usunąć ten plan treningowy?</p>
+              <div className="flex gap-3 mt-6">
+                <button onClick={() => setRoutineToDelete(null)} className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors">Anuluj</button>
+                <button onClick={() => { deleteRoutine(routineToDelete); setRoutineToDelete(null); }} className="flex-1 py-4 rounded-2xl bg-rose-500 text-white font-bold shadow-lg shadow-rose-500/30">Usuń</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {historySetToDelete && (
+          <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
+            <div className="bg-white p-8 rounded-[32px] w-full max-w-sm flex flex-col shadow-2xl">
+              <h3 className="text-2xl font-black text-slate-800 tracking-tight mb-2">Usunąć serię?</h3>
+              <p className="text-slate-500 font-medium">Czy na pewno chcesz usunąć tę serię z historii treningu?</p>
+              <div className="flex gap-3 mt-6">
+                <button onClick={() => setHistorySetToDelete(null)} className="flex-1 py-4 rounded-2xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200 transition-colors">Anuluj</button>
+                <button onClick={confirmDeleteHistorySet} className="flex-1 py-4 rounded-2xl bg-rose-500 text-white font-bold shadow-lg shadow-rose-500/30">Usuń</button>
+              </div>
             </div>
           </div>
         )}
