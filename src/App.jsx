@@ -156,7 +156,7 @@ export default function App() {
   const [expandedCharts, setExpandedCharts] = useState({});
   const [selectedHistoryExercise, setSelectedHistoryExercise] = useState(null);
 
-  // --- NOWE STANY DO POTWIERDZEŃ W UI ---
+  // Stany potwierdzeń UI
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [logoutText, setLogoutText] = useState('');
   const [exerciseToDelete, setExerciseToDelete] = useState(null);
@@ -165,8 +165,8 @@ export default function App() {
 
   const [db, setDb] = useState(null);
   const [auth, setAuth] = useState(null);
-  const isCloudUpdate = useRef(false);
 
+  // Inicjalizacja Firebase
   useEffect(() => {
     const config = {
       apiKey: "AIzaSyDS1P1H4IrXG6CCU3kIQ4LZcKtEypgEIIc",
@@ -187,39 +187,40 @@ export default function App() {
 
         const unsub = onAuthStateChanged(authInstance, (u) => {
           setUser(u);
-          if (!u) {
-            isCloudUpdate.current = false;
-          }
         });
         return () => unsub();
       } catch(e) { console.error("Firebase init error:", e); }
     }
   }, []);
 
+  // Odczyt z chmury
   useEffect(() => {
     if (!db || !user) return;
     const userDoc = doc(db, 'users', user.uid);
     const unsub = onSnapshot(userDoc, (docSnap) => {
        if (docSnap.exists()) {
-          isCloudUpdate.current = true;
           const data = docSnap.data();
           if (data.exercises) setExercises(data.exercises);
           if (data.routines) setRoutines(data.routines);
           if (data.historyTurtle) setHistoryTurtle(data.historyTurtle);
           if (data.historyBlonde) setHistoryBlonde(data.historyBlonde);
-          setTimeout(() => { isCloudUpdate.current = false; }, 500);
        }
     }, (err) => console.log("Cloud Error:", err));
     return () => unsub();
   }, [db, user]);
 
-  useEffect(() => {
-    if (!db || !user || isCloudUpdate.current) return;
-    const userDoc = doc(db, 'users', user.uid);
-    const stateToSave = { exercises, routines, historyTurtle, historyBlonde };
-    setDoc(userDoc, stateToSave, { merge: true }).catch(e => console.error(e));
-  }, [exercises, routines, historyTurtle, historyBlonde, db, user]);
+  // CELOWANY ZAPIS DO CHMURY
+  const saveToCloud = async (dataToUpdate) => {
+    if (db && user) {
+      try {
+        await setDoc(doc(db, 'users', user.uid), dataToUpdate, { merge: true });
+      } catch (e) {
+        console.error("Błąd zapisu w chmurze:", e);
+      }
+    }
+  };
 
+  // Zapis lokalny
   useEffect(() => { localStorage.setItem('gym_currentUser', currentUser); }, [currentUser]);
   useEffect(() => { localStorage.setItem('gym_exercises', JSON.stringify(exercises)); }, [exercises]);
   useEffect(() => { localStorage.setItem('gym_routines', JSON.stringify(routines)); }, [routines]);
@@ -265,6 +266,9 @@ export default function App() {
     });
 
     setHistory(updatedHistory);
+    const historyKey = currentUser === 'turtle' ? 'historyTurtle' : 'historyBlonde';
+    saveToCloud({ [historyKey]: updatedHistory });
+    
     setHistorySetToDelete(null);
   };
 
@@ -275,11 +279,19 @@ export default function App() {
   const addExercise = () => {
     if (!newExerciseName.trim() || !newExerciseCategory || !newExerciseSubcategory) return;
     const newEx = { id: Date.now().toString(), name: newExerciseName, target: `${newExerciseCategory} - ${newExerciseSubcategory}` };
-    setExercises([...exercises, newEx]);
+    const updatedExercises = [...exercises, newEx];
+    
+    setExercises(updatedExercises);
+    saveToCloud({ exercises: updatedExercises });
+    
     setNewExerciseName(''); setNewExerciseCategory(''); setNewExerciseSubcategory('');
   };
 
-  const deleteExercise = (id) => setExercises(exercises.filter(ex => ex.id !== id));
+  const deleteExercise = (id) => {
+    const updatedExercises = exercises.filter(ex => ex.id !== id);
+    setExercises(updatedExercises);
+    saveToCloud({ exercises: updatedExercises });
+  };
 
   const [isCreatingRoutine, setIsCreatingRoutine] = useState(false);
   const [editingRoutineId, setEditingRoutineId] = useState(null); 
@@ -290,7 +302,6 @@ export default function App() {
     if (routine) {
       setEditingRoutineId(routine.id); 
       setNewRoutineName(routine.name); 
-      // Migracja: jeśli stare plany miały same stringi, zamień na obiekty do obsługi superserii
       setSelectedExercisesForRoutine(routine.exercises.map(ex => typeof ex === 'string' ? {id: ex, linked: false} : ex));
     } else {
       setEditingRoutineId(null); setNewRoutineName(''); setSelectedExercisesForRoutine([]);
@@ -308,8 +319,6 @@ export default function App() {
     const newSelected = [...selectedExercisesForRoutine];
     if (direction === 'up' && index > 0) [newSelected[index - 1], newSelected[index]] = [newSelected[index], newSelected[index - 1]];
     else if (direction === 'down' && index < newSelected.length - 1) [newSelected[index + 1], newSelected[index]] = [newSelected[index], newSelected[index + 1]];
-    
-    // Zabezpieczenie: ostatni element nie może być połączony z "niczym"
     if (newSelected.length > 0) newSelected[newSelected.length - 1].linked = false;
     setSelectedExercisesForRoutine(newSelected);
   };
@@ -318,20 +327,28 @@ export default function App() {
     if (!newRoutineName.trim() || selectedExercisesForRoutine.length === 0) return;
     
     const finalExercises = [...selectedExercisesForRoutine];
-    if (finalExercises.length > 0) finalExercises[finalExercises.length - 1].linked = false; // bezpieczeństwo
+    if (finalExercises.length > 0) finalExercises[finalExercises.length - 1].linked = false; 
 
+    let updatedRoutines;
     if (editingRoutineId) {
-      setRoutines(routines.map(r => r.id === editingRoutineId ? { ...r, name: newRoutineName, exercises: finalExercises } : r));
+      updatedRoutines = routines.map(r => r.id === editingRoutineId ? { ...r, name: newRoutineName, exercises: finalExercises } : r);
     } else {
-      setRoutines([...routines, { id: Date.now().toString(), name: newRoutineName, exercises: finalExercises }]);
+      updatedRoutines = [...routines, { id: Date.now().toString(), name: newRoutineName, exercises: finalExercises }];
     }
+    
+    setRoutines(updatedRoutines);
+    saveToCloud({ routines: updatedRoutines });
+    
     setIsCreatingRoutine(false); setEditingRoutineId(null); setNewRoutineName(''); setSelectedExercisesForRoutine([]);
   };
 
-  const deleteRoutine = (id) => setRoutines(routines.filter(r => r.id !== id));
+  const deleteRoutine = (id) => {
+    const updatedRoutines = routines.filter(r => r.id !== id);
+    setRoutines(updatedRoutines);
+    saveToCloud({ routines: updatedRoutines });
+  };
 
   const startWorkout = (routine) => {
-    // Migracja wsteczna dla starych planów w momencie startu
     const exList = routine.exercises.map(ex => typeof ex === 'string' ? { id: ex, linked: false } : ex);
     setActiveWorkout({
       id: Date.now().toString(), routineName: routine.name, startTime: new Date().toISOString(),
@@ -364,7 +381,13 @@ export default function App() {
       timestamp: endTime.toISOString(), duration: `${diffMins} min ${diffSecs} s`, totalVolume, exerciseSummaries, exercises: activeWorkout.exercises
     };
 
-    setHistory([summary, ...history]); setSummaryData(summary); setActiveWorkout(null); setShowFinishConfirm(false);
+    const updatedHistory = [summary, ...history];
+    setHistory(updatedHistory);
+    
+    const historyKey = currentUser === 'turtle' ? 'historyTurtle' : 'historyBlonde';
+    saveToCloud({ [historyKey]: updatedHistory });
+
+    setSummaryData(summary); setActiveWorkout(null); setShowFinishConfirm(false);
   };
 
   const addSet = (exerciseIndex) => {
@@ -377,6 +400,12 @@ export default function App() {
   const updateSet = (exerciseIndex, setIndex, field, value) => {
     const updatedWorkout = { ...activeWorkout };
     updatedWorkout.exercises[exerciseIndex].sets[setIndex][field] = value;
+    setActiveWorkout(updatedWorkout);
+  };
+
+  const removeSet = (exerciseIndex, setIndex) => {
+    const updatedWorkout = { ...activeWorkout };
+    updatedWorkout.exercises[exerciseIndex].sets.splice(setIndex, 1);
     setActiveWorkout(updatedWorkout);
   };
 
@@ -742,7 +771,7 @@ export default function App() {
         currentGroup = [];
       }
     });
-    if (currentGroup.length > 0) groupedExercises.push(currentGroup); // Zabezpieczenie dla ostatniego elementu
+    if (currentGroup.length > 0) groupedExercises.push(currentGroup); 
 
     return (
       <div className="pb-32">
@@ -800,10 +829,8 @@ export default function App() {
                 {isSuperset && (
                   <>
                     <div className="absolute inset-0 rounded-[34px] overflow-hidden pointer-events-none z-0" style={{ animation: 'olympicGlow 3s ease-in-out infinite' }}>
-                       {/* Błyszcząca fala świetlna (przesuwający się refleks) */}
                        <div className="absolute top-0 left-0 w-[50%] h-full bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" style={{ animation: 'shineSweep 3s infinite linear' }}></div>
                        
-                       {/* Bardzo mocne drobinki złota */}
                        <div className="absolute top-[10%] left-[10%] w-3 h-3 bg-white rounded-full sparkle-1 shadow-[0_0_15px_#fef08a]"></div>
                        <div className="absolute bottom-[20%] right-[5%] w-4 h-4 bg-yellow-100 rounded-full sparkle-2 shadow-[0_0_20px_#fde047]"></div>
                        <div className="absolute top-[50%] left-[3%] w-2 h-2 bg-white rounded-full sparkle-3 shadow-[0_0_10px_#fef08a]"></div>
@@ -1213,7 +1240,6 @@ export default function App() {
     <div className="h-[100dvh] w-full bg-[#f0f4f8] flex justify-center font-sans text-slate-800 overflow-hidden">
       <div className="w-full max-w-md bg-[#fafafa] h-full relative shadow-[0_0_50px_rgba(0,0,0,0.05)] flex flex-col overflow-hidden">
         
-        {/* INLINED LOGIN MODAL (Rozwiązuje problem zamykającej się klawiatury) */}
         {showLoginModal && (
           <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
             <div className="bg-white p-8 rounded-[32px] w-full max-w-sm space-y-5 shadow-2xl">
