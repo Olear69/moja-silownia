@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dumbbell, List, Play, Plus, Trash2, Check, X, Save, History, ChevronRight, BarChart2, Pencil, ArrowUp, ArrowDown, Cloud, CloudOff, LogOut, Link } from 'lucide-react';
+import { Dumbbell, List, Play, Plus, Trash2, Check, X, Save, History, ChevronRight, BarChart2, Pencil, ArrowUp, ArrowDown, Cloud, CloudOff, LogOut, Link, RefreshCw } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
@@ -93,7 +93,7 @@ const defaultExercises = [
 ];
 
 const defaultRoutines = [
-  { id: '1', name: 'Trening FBW (Full Body)', exercises: [{id: '2', linked: false}, {id: '1', linked: false}, {id: '3', linked: false}] }
+  { id: '1', name: 'Trening FBW (Full Body)', exercises: [{id: '2', linked: false, alternatives: []}, {id: '1', linked: false, alternatives: []}, {id: '3', linked: false, alternatives: []}] }
 ];
 
 const muscleGroups = {
@@ -156,12 +156,15 @@ export default function App() {
   const [expandedCharts, setExpandedCharts] = useState({});
   const [selectedHistoryExercise, setSelectedHistoryExercise] = useState(null);
 
-  // Stany potwierdzeń UI
+  // Stany potwierdzeń UI i Modali
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [logoutText, setLogoutText] = useState('');
   const [exerciseToDelete, setExerciseToDelete] = useState(null);
   const [routineToDelete, setRoutineToDelete] = useState(null);
   const [historySetToDelete, setHistorySetToDelete] = useState(null);
+  
+  // NOWY STAN: Wymiana na alternatywę podczas treningu
+  const [alternativeSwapModal, setAlternativeSwapModal] = useState(null);
 
   const [db, setDb] = useState(null);
   const [auth, setAuth] = useState(null);
@@ -293,16 +296,19 @@ export default function App() {
     saveToCloud({ exercises: updatedExercises });
   };
 
+  // --- LOGIKA PLANÓW TRENINGOWYCH ---
   const [isCreatingRoutine, setIsCreatingRoutine] = useState(false);
   const [editingRoutineId, setEditingRoutineId] = useState(null); 
   const [newRoutineName, setNewRoutineName] = useState('');
   const [selectedExercisesForRoutine, setSelectedExercisesForRoutine] = useState([]);
+  const [altPickerForIdx, setAltPickerForIdx] = useState(null); // Nowy stan do dodawania alternatyw
 
   const openRoutineEditor = (routine = null) => {
     if (routine) {
       setEditingRoutineId(routine.id); 
       setNewRoutineName(routine.name); 
-      setSelectedExercisesForRoutine(routine.exercises.map(ex => typeof ex === 'string' ? {id: ex, linked: false} : ex));
+      // Dodana obsługa pola `alternatives` dla starych planów
+      setSelectedExercisesForRoutine(routine.exercises.map(ex => typeof ex === 'string' ? {id: ex, linked: false, alternatives: []} : {...ex, alternatives: ex.alternatives || []}));
     } else {
       setEditingRoutineId(null); setNewRoutineName(''); setSelectedExercisesForRoutine([]);
     }
@@ -321,6 +327,21 @@ export default function App() {
     else if (direction === 'down' && index < newSelected.length - 1) [newSelected[index + 1], newSelected[index]] = [newSelected[index], newSelected[index + 1]];
     if (newSelected.length > 0) newSelected[newSelected.length - 1].linked = false;
     setSelectedExercisesForRoutine(newSelected);
+  };
+  
+  // Zarządzanie alternatywami w edytorze
+  const addAlternativeToExercise = (exIdx, altId) => {
+     const newSelected = [...selectedExercisesForRoutine];
+     if (!newSelected[exIdx].alternatives) newSelected[exIdx].alternatives = [];
+     newSelected[exIdx].alternatives.push(altId);
+     setSelectedExercisesForRoutine(newSelected);
+     setAltPickerForIdx(null);
+  };
+
+  const removeAlternative = (exIdx, altId) => {
+     const newSelected = [...selectedExercisesForRoutine];
+     newSelected[exIdx].alternatives = newSelected[exIdx].alternatives.filter(id => id !== altId);
+     setSelectedExercisesForRoutine(newSelected);
   };
 
   const saveRoutine = () => {
@@ -348,12 +369,20 @@ export default function App() {
     saveToCloud({ routines: updatedRoutines });
   };
 
+  // --- LOGIKA TRENINGU ---
   const startWorkout = (routine) => {
-    const exList = routine.exercises.map(ex => typeof ex === 'string' ? { id: ex, linked: false } : ex);
+    const exList = routine.exercises.map(ex => typeof ex === 'string' ? { id: ex, linked: false, alternatives: [] } : ex);
     setActiveWorkout({
       id: Date.now().toString(), routineName: routine.name, startTime: new Date().toISOString(),
-      exercises: exList.map(ex => ({ exerciseId: ex.id, linked: ex.linked || false, sets: [{ weight: '', reps: '' }] }))
+      // Zapisujemy originalId, aby mieć pulę alternatyw przy ewentualnej zmianie
+      exercises: exList.map(ex => ({ exerciseId: ex.id, originalId: ex.id, linked: ex.linked || false, alternatives: ex.alternatives || [], sets: [{ weight: '', reps: '' }] }))
     });
+  };
+  
+  const swapActiveExercise = (exIndex, newExId) => {
+    const updatedWorkout = { ...activeWorkout };
+    updatedWorkout.exercises[exIndex].exerciseId = newExId;
+    setActiveWorkout(updatedWorkout);
   };
 
   const finishWorkout = () => {
@@ -408,6 +437,30 @@ export default function App() {
     updatedWorkout.exercises[exerciseIndex].sets.splice(setIndex, 1);
     setActiveWorkout(updatedWorkout);
   };
+
+  const getLastExercisePerformance = (exerciseId) => {
+    for (const session of history) {
+      if (session.exercises) {
+        const ex = session.exercises.find(e => e.exerciseId === exerciseId);
+        if (ex && ex.sets && ex.sets.length > 0) {
+          const validSets = ex.sets.filter(s => parseFloat(String(s.weight).replace(',', '.')) > 0 && parseInt(s.reps) > 0);
+          if (validSets.length > 0) {
+            const numSets = validSets.length;
+            const bestSet = validSets.reduce((best, current) => {
+               const wBest = parseFloat(String(best.weight).replace(',', '.')) || 0;
+               const wCurr = parseFloat(String(current.weight).replace(',', '.')) || 0;
+               return wCurr > wBest ? current : best;
+            }, validSets[0]);
+            
+            const serieLabel = numSets === 1 ? 'seria' : (numSets > 1 && numSets < 5 ? 'serie' : 'serii');
+            return `Ostatnio: ${numSets} ${serieLabel} (max: ${bestSet.weight}kg x ${bestSet.reps})`;
+          }
+        }
+      }
+    }
+    return "Brak historii dla tego ćwiczenia";
+  };
+
 
   // --- KOMPONENTY WIDOKÓW ---
 
@@ -558,10 +611,32 @@ export default function App() {
                     return (
                       <React.Fragment key={item.id + idx}>
                         <div className={`flex items-center justify-between ${theme.bgMain10} border ${theme.borderMain20} p-3 rounded-2xl relative z-20 shadow-sm`}>
-                          <div className="flex items-center gap-3 overflow-hidden">
-                            <span className={`w-6 h-6 shrink-0 bg-white rounded-full flex items-center justify-center text-[10px] font-bold ${theme.textMain} shadow-sm`}>{idx + 1}</span>
-                            <span className={`font-bold ${theme.textMain} text-sm truncate pr-2`}>{ex.name}</span>
+                          <div className="flex flex-col gap-1 overflow-hidden pr-2 flex-1">
+                            <div className="flex items-center gap-3">
+                              <span className={`w-6 h-6 shrink-0 bg-white rounded-full flex items-center justify-center text-[10px] font-bold ${theme.textMain} shadow-sm`}>{idx + 1}</span>
+                              <span className={`font-bold ${theme.textMain} text-sm truncate`}>{ex.name}</span>
+                            </div>
+                            
+                            {/* LISTA ALTERNATYW W EDYTORZE */}
+                            {item.alternatives && item.alternatives.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1 pl-9">
+                                {item.alternatives.map(altId => {
+                                  const altEx = exercises.find(e => e.id === altId);
+                                  return (
+                                     <span key={altId} className="text-[9px] bg-orange-100 border border-orange-200 text-orange-700 px-1.5 py-0.5 rounded-md font-bold flex items-center gap-1 shadow-sm">
+                                        {altEx?.name}
+                                        <button onClick={(e) => { e.stopPropagation(); removeAlternative(idx, altId); }} className="hover:text-rose-600 transition-colors"><X size={10} strokeWidth={3}/></button>
+                                     </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {/* PRZYCISK DODAWANIA ALTERNATYWY */}
+                            <button onClick={() => setAltPickerForIdx(idx)} className="text-[9px] text-orange-500 font-black uppercase tracking-wider flex items-center gap-1 w-max mt-1 hover:text-orange-600 transition-colors pl-9">
+                              <Plus size={10} strokeWidth={3}/> Dodaj alternatywę
+                            </button>
                           </div>
+                          
                           <div className="flex items-center gap-1 shrink-0 bg-white/50 rounded-xl p-1">
                             <button onClick={() => moveExercise(idx, 'up')} disabled={idx === 0} className="p-1.5 text-slate-400 hover:text-slate-800 disabled:opacity-30 transition-colors"><ArrowUp size={16}/></button>
                             <button onClick={() => moveExercise(idx, 'down')} disabled={idx === selectedExercisesForRoutine.length - 1} className="p-1.5 text-slate-400 hover:text-slate-800 disabled:opacity-30 transition-colors"><ArrowDown size={16}/></button>
@@ -595,7 +670,7 @@ export default function App() {
                 {exercises.filter(ex => !selectedExercisesForRoutine.some(s => s.id === ex.id)).map(ex => (
                   <div 
                     key={ex.id} 
-                    onClick={() => setSelectedExercisesForRoutine([...selectedExercisesForRoutine, {id: ex.id, linked: false}])} 
+                    onClick={() => setSelectedExercisesForRoutine([...selectedExercisesForRoutine, {id: ex.id, linked: false, alternatives: []}])} 
                     className="flex items-center justify-between bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-300 p-3.5 rounded-xl cursor-pointer transition-all"
                   >
                     <div className="flex items-center gap-3">
@@ -627,6 +702,36 @@ export default function App() {
             <Save size={20} /> Zapisz plan
           </button>
         </div>
+      )}
+      
+      {/* MODAL WYBORU ALTERNATYWY DLA EDYTORA PLANU */}
+      {altPickerForIdx !== null && (
+         <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
+            <div className="bg-white p-6 rounded-[32px] w-full max-w-sm flex flex-col shadow-2xl h-[60vh]">
+               <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-black text-xl text-slate-800">Wybierz alternatywę</h3>
+                  <button onClick={() => setAltPickerForIdx(null)} className="p-2 bg-slate-50 text-slate-400 hover:text-rose-500 rounded-full transition-colors"><X size={20}/></button>
+               </div>
+               <div className="flex-1 overflow-y-auto space-y-2 custom-scrollbar">
+                  {exercises
+                    .filter(ex => ex.id !== selectedExercisesForRoutine[altPickerForIdx].id && !(selectedExercisesForRoutine[altPickerForIdx].alternatives||[]).includes(ex.id))
+                    .map(ex => (
+                     <div key={ex.id} onClick={() => addAlternativeToExercise(altPickerForIdx, ex.id)} className="p-4 border-2 border-slate-100 rounded-2xl hover:border-orange-300 hover:bg-orange-50 cursor-pointer transition-colors group">
+                        <div className="flex justify-between items-center">
+                           <div>
+                              <p className="font-bold text-sm text-slate-800 group-hover:text-orange-700 transition-colors">{ex.name}</p>
+                              <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-0.5">{ex.target}</p>
+                           </div>
+                           <Plus size={18} className="text-slate-300 group-hover:text-orange-500" strokeWidth={3}/>
+                        </div>
+                     </div>
+                  ))}
+                  {exercises.filter(ex => ex.id !== selectedExercisesForRoutine[altPickerForIdx].id && !(selectedExercisesForRoutine[altPickerForIdx].alternatives||[]).includes(ex.id)).length === 0 && (
+                     <p className="text-sm text-slate-400 text-center py-6 font-medium">Brak dostępnych ćwiczeń do wyboru.</p>
+                  )}
+               </div>
+            </div>
+         </div>
       )}
     </div>
   );
@@ -738,29 +843,6 @@ export default function App() {
       setExpandedCharts(prev => ({ ...prev, [exId]: !prev[exId] }));
     };
 
-    const getLastExercisePerformance = (exerciseId) => {
-      for (const session of history) {
-        if (session.exercises) {
-          const ex = session.exercises.find(e => e.exerciseId === exerciseId);
-          if (ex && ex.sets && ex.sets.length > 0) {
-            const validSets = ex.sets.filter(s => parseFloat(String(s.weight).replace(',', '.')) > 0 && parseInt(s.reps) > 0);
-            if (validSets.length > 0) {
-              const numSets = validSets.length;
-              const bestSet = validSets.reduce((best, current) => {
-                 const wBest = parseFloat(String(best.weight).replace(',', '.')) || 0;
-                 const wCurr = parseFloat(String(current.weight).replace(',', '.')) || 0;
-                 return wCurr > wBest ? current : best;
-              }, validSets[0]);
-              
-              const serieLabel = numSets === 1 ? 'seria' : (numSets > 1 && numSets < 5 ? 'serie' : 'serii');
-              return `Ostatnio: ${numSets} ${serieLabel} (max: ${bestSet.weight}kg x ${bestSet.reps})`;
-            }
-          }
-        }
-      }
-      return "Brak historii dla tego ćwiczenia";
-    };
-
     // ALGOTRYTM GRUPOWANIA SUPERSERII
     const groupedExercises = [];
     let currentGroup = [];
@@ -793,8 +875,15 @@ export default function App() {
           .sparkle-3 { animation: intenseSparkle 2.5s infinite ease-in-out 0.5s; }
           .sparkle-4 { animation: intenseSparkle 3.2s infinite ease-in-out 1.8s; }
           .sparkle-5 { animation: intenseSparkle 2.2s infinite ease-in-out 2.5s; }
+          
+          @keyframes shimmerButton {
+            100% { transform: translateX(100%); }
+          }
+          .animate-shimmer-btn {
+            animation: shimmerButton 1.5s infinite;
+          }
         `}</style>
-        <div className="sticky top-0 bg-white/80 backdrop-blur-xl border-b border-slate-100 p-4 shadow-sm z-10 flex justify-between items-center rounded-b-[32px]">
+        <div className="sticky top-0 bg-white/80 backdrop-blur-xl border-b border-slate-100 p-4 shadow-sm z-40 flex justify-between items-center rounded-b-[32px]">
           <div className="flex items-center gap-3 overflow-hidden">
             <div 
               onClick={() => setShowEasterEgg(true)}
@@ -858,17 +947,29 @@ export default function App() {
                               <MuscleIcon category={exerciseDetails.target.split(' - ')[0]} className="w-6 h-6" />
                             </div>
                             <div>
-                              <div className="flex items-center gap-3">
-                                <h3 className="font-black text-slate-800 text-lg">{exerciseDetails.name}</h3>
-                                <button 
-                                  onClick={() => toggleChart(exerciseDetails.id)} 
-                                  className={`${theme.textSec} ${theme.bgSec10} p-2 rounded-xl ${theme.hoverBgSec20} transition-all shadow-sm shrink-0`}
-                                >
-                                  <BarChart2 size={18} strokeWidth={2.5} />
-                                </button>
-                              </div>
-                              <p className={`text-[11px] font-bold uppercase tracking-wider mt-1 ${theme.textMain} opacity-80`}>{getLastExercisePerformance(exerciseDetails.id)}</p>
+                              <h3 className="font-black text-slate-800 text-lg pr-2 leading-tight mb-1">{exerciseDetails.name}</h3>
+                              <p className={`text-[10px] font-bold uppercase tracking-wider ${theme.textMain} opacity-80`}>{getLastExercisePerformance(exerciseDetails.id)}</p>
                             </div>
+                          </div>
+                          
+                          <div className="flex flex-col gap-1.5 shrink-0 pl-2">
+                             <button 
+                               onClick={() => toggleChart(exerciseDetails.id)} 
+                               className={`${theme.textSec} ${theme.bgSec10} p-2 rounded-xl ${theme.hoverBgSec20} transition-all shadow-sm shrink-0 flex items-center justify-center`}
+                             >
+                               <BarChart2 size={18} strokeWidth={2.5} />
+                             </button>
+                             
+                             {/* PRZYCISK ALTERNATYWY (ZŁOTO-POMARAŃCZOWY) */}
+                             {workoutEx.alternatives && workoutEx.alternatives.length > 0 && (
+                                <button
+                                   onClick={() => setAlternativeSwapModal({ exIndex })}
+                                   className="bg-gradient-to-br from-orange-400 to-amber-500 text-white p-1.5 rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.4)] hover:shadow-[0_0_20px_rgba(245,158,11,0.6)] shrink-0 flex items-center justify-center font-black text-[11px] relative overflow-hidden group border border-orange-300"
+                                >
+                                   <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:animate-shimmer-btn"></div>
+                                   <span className="relative z-10 flex items-center gap-0.5">+{workoutEx.alternatives.length} <RefreshCw size={10} strokeWidth={3} className="opacity-90"/></span>
+                                </button>
+                             )}
                           </div>
                         </div>
                         
@@ -1407,6 +1508,51 @@ export default function App() {
               </div>
             </div>
           </div>
+        )}
+        
+        {/* MODAL ZAMIANY ĆWICZENIA NA ALTERNATYWĘ (WIDOK TRENINGU) */}
+        {alternativeSwapModal && (
+           <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
+              <div className="bg-white p-6 rounded-[32px] w-full max-w-sm flex flex-col shadow-2xl">
+                 <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-black text-xl text-slate-800">Wybierz wariant</h3>
+                    <button onClick={() => setAlternativeSwapModal(null)} className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-full transition-colors"><X size={20}/></button>
+                 </div>
+                 <p className="text-xs text-slate-500 font-medium mb-4">Zamiana dotyczy tylko tego jednego treningu.</p>
+                 <div className="space-y-3 overflow-y-auto max-h-[60vh] custom-scrollbar">
+                    {(() => {
+                       const exData = activeWorkout.exercises[alternativeSwapModal.exIndex];
+                       // Pula to zawsze "oryginalne" ćwiczenie (z planu) + wszystkie jego przypisane alternatywy
+                       const pool = [exData.originalId, ...(exData.alternatives || [])];
+                       
+                       return pool.map(id => {
+                          const ex = exercises.find(e => e.id === id);
+                          if(!ex) return null;
+                          const isCurrent = id === exData.exerciseId;
+                          
+                          return (
+                             <div 
+                               key={id} 
+                               onClick={() => { swapActiveExercise(alternativeSwapModal.exIndex, id); setAlternativeSwapModal(null); }} 
+                               className={`p-4 border-2 rounded-2xl cursor-pointer transition-all ${isCurrent ? 'border-orange-400 bg-orange-50 shadow-md shadow-orange-500/10' : 'border-slate-100 bg-white hover:border-orange-200 hover:shadow-sm'}`}
+                             >
+                                <div className="flex justify-between items-start">
+                                   <div>
+                                      <p className={`font-black text-sm ${isCurrent ? 'text-orange-700' : 'text-slate-800'}`}>{ex.name}</p>
+                                      <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1 mb-2">{ex.target}</p>
+                                   </div>
+                                   {isCurrent && <div className="bg-orange-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded-lg">Aktywne</div>}
+                                </div>
+                                <p className={`text-[11px] font-bold ${isCurrent ? 'text-orange-600 bg-orange-100/50' : 'text-amber-600 bg-amber-50'} inline-block px-2 py-1 rounded-lg border ${isCurrent ? 'border-orange-200' : 'border-amber-100'}`}>
+                                   {getLastExercisePerformance(id)}
+                                </p>
+                             </div>
+                          )
+                       })
+                    })()}
+                 </div>
+              </div>
+           </div>
         )}
 
         {showEasterEgg && (
