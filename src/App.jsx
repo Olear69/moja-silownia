@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dumbbell, List, Play, Plus, Trash2, Check, X, Save, History, ChevronRight, BarChart2, Pencil, ArrowUp, ArrowDown, Cloud, CloudOff, LogOut } from 'lucide-react';
+import { Dumbbell, List, Play, Plus, Trash2, Check, X, Save, History, ChevronRight, BarChart2, Pencil, ArrowUp, ArrowDown, Cloud, CloudOff, LogOut, Link } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
@@ -36,7 +36,7 @@ const themes = {
     hoverBgSec20: 'hover:bg-teal-100',
     hoverFillSec40: 'hover:fill-teal-200',
     
-    chartSecFill: '#0d9488' // teal-600
+    chartSecFill: '#0d9488'
   },
   blonde: {
     textMain: 'text-rose-500',
@@ -68,11 +68,10 @@ const themes = {
     hoverBgSec20: 'hover:bg-red-100',
     hoverFillSec40: 'hover:fill-red-200',
     
-    chartSecFill: '#ef4444' // red-500
+    chartSecFill: '#ef4444'
   }
 };
 
-// --- KOMPONENT: IKONY PARTII MIĘŚNIOWYCH (SVG) ---
 const MuscleIcon = ({ category, className = "w-5 h-5" }) => {
   const cat = category === 'Klatka piersiowa' ? 'Klatka' : category;
   switch (cat) {
@@ -94,7 +93,7 @@ const defaultExercises = [
 ];
 
 const defaultRoutines = [
-  { id: '1', name: 'Trening FBW (Full Body)', exercises: ['2', '1', '3'] }
+  { id: '1', name: 'Trening FBW (Full Body)', exercises: [{id: '2', linked: false}, {id: '1', linked: false}, {id: '3', linked: false}] }
 ];
 
 const muscleGroups = {
@@ -163,12 +162,12 @@ export default function App() {
 
   useEffect(() => {
     const config = {
-      apiKey: "AIzaSyDS1P1H4IrXG6CCU3kIQ4LZcKtEypgEIIc",
-      authDomain: "ronnie-silka.firebaseapp.com",
-      projectId: "ronnie-silka",
-      storageBucket: "ronnie-silka.firebasestorage.app",
-      messagingSenderId: "225312176403",
-      appId: "1:225312176403:web:3416595fe94083b60f02e6"
+      apiKey: "TWOJE_API_KEY",
+      authDomain: "TWOJA_DOMENA",
+      projectId: "TWOJE_ID",
+      storageBucket: "TWOJE_BUCKET",
+      messagingSenderId: "TWOJE_SENDER_ID",
+      appId: "TWOJE_APP_ID"
     };
 
     if (config.apiKey !== "TWOJE_API_KEY") {
@@ -259,26 +258,42 @@ export default function App() {
 
   const openRoutineEditor = (routine = null) => {
     if (routine) {
-      setEditingRoutineId(routine.id); setNewRoutineName(routine.name); setSelectedExercisesForRoutine(routine.exercises);
+      setEditingRoutineId(routine.id); 
+      setNewRoutineName(routine.name); 
+      // Migracja: jeśli stare plany miały same stringi, zamień na obiekty do obsługi superserii
+      setSelectedExercisesForRoutine(routine.exercises.map(ex => typeof ex === 'string' ? {id: ex, linked: false} : ex));
     } else {
       setEditingRoutineId(null); setNewRoutineName(''); setSelectedExercisesForRoutine([]);
     }
     setIsCreatingRoutine(true);
   };
 
+  const toggleLink = (idx) => {
+    const newSelected = [...selectedExercisesForRoutine];
+    newSelected[idx].linked = !newSelected[idx].linked;
+    setSelectedExercisesForRoutine(newSelected);
+  };
+
   const moveExercise = (index, direction) => {
     const newSelected = [...selectedExercisesForRoutine];
     if (direction === 'up' && index > 0) [newSelected[index - 1], newSelected[index]] = [newSelected[index], newSelected[index - 1]];
     else if (direction === 'down' && index < newSelected.length - 1) [newSelected[index + 1], newSelected[index]] = [newSelected[index], newSelected[index + 1]];
+    
+    // Zabezpieczenie: ostatni element nie może być połączony z "niczym"
+    if (newSelected.length > 0) newSelected[newSelected.length - 1].linked = false;
     setSelectedExercisesForRoutine(newSelected);
   };
 
   const saveRoutine = () => {
     if (!newRoutineName.trim() || selectedExercisesForRoutine.length === 0) return;
+    
+    const finalExercises = [...selectedExercisesForRoutine];
+    if (finalExercises.length > 0) finalExercises[finalExercises.length - 1].linked = false; // bezpieczeństwo
+
     if (editingRoutineId) {
-      setRoutines(routines.map(r => r.id === editingRoutineId ? { ...r, name: newRoutineName, exercises: selectedExercisesForRoutine } : r));
+      setRoutines(routines.map(r => r.id === editingRoutineId ? { ...r, name: newRoutineName, exercises: finalExercises } : r));
     } else {
-      setRoutines([...routines, { id: Date.now().toString(), name: newRoutineName, exercises: selectedExercisesForRoutine }]);
+      setRoutines([...routines, { id: Date.now().toString(), name: newRoutineName, exercises: finalExercises }]);
     }
     setIsCreatingRoutine(false); setEditingRoutineId(null); setNewRoutineName(''); setSelectedExercisesForRoutine([]);
   };
@@ -286,9 +301,11 @@ export default function App() {
   const deleteRoutine = (id) => setRoutines(routines.filter(r => r.id !== id));
 
   const startWorkout = (routine) => {
+    // Migracja wsteczna dla starych planów w momencie startu
+    const exList = routine.exercises.map(ex => typeof ex === 'string' ? { id: ex, linked: false } : ex);
     setActiveWorkout({
       id: Date.now().toString(), routineName: routine.name, startTime: new Date().toISOString(),
-      exercises: routine.exercises.map(exId => ({ exerciseId: exId, sets: [{ weight: '', reps: '' }] }))
+      exercises: exList.map(ex => ({ exerciseId: ex.id, linked: ex.linked || false, sets: [{ weight: '', reps: '' }] }))
     });
   };
 
@@ -333,13 +350,7 @@ export default function App() {
     setActiveWorkout(updatedWorkout);
   };
 
-  const removeSet = (exerciseIndex, setIndex) => {
-    const updatedWorkout = { ...activeWorkout };
-    updatedWorkout.exercises[exerciseIndex].sets.splice(setIndex, 1);
-    setActiveWorkout(updatedWorkout);
-  };
-
-  // --- KOMPONENTY WIDOKÓW (ZMIENIONE NA JASNY MOTYW) ---
+  // --- KOMPONENTY WIDOKÓW ---
 
   const LibraryView = () => (
     <div className="p-4 space-y-6 pb-32">
@@ -481,23 +492,38 @@ export default function App() {
               {selectedExercisesForRoutine.length === 0 ? (
                 <p className="text-sm text-slate-400 italic border-2 border-dashed border-slate-200 rounded-2xl p-4 text-center font-medium">Brak wybranych ćwiczeń.</p>
               ) : (
-                <div className="space-y-2">
-                  {selectedExercisesForRoutine.map((exId, idx) => {
-                    const ex = exercises.find(e => e.id === exId);
+                <div className="space-y-0 flex flex-col">
+                  {selectedExercisesForRoutine.map((item, idx) => {
+                    const ex = exercises.find(e => e.id === item.id);
                     if(!ex) return null;
                     return (
-                      <div key={exId + idx} className={`flex items-center justify-between ${theme.bgMain10} border ${theme.borderMain20} p-3 rounded-2xl`}>
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <span className={`w-6 h-6 shrink-0 bg-white rounded-full flex items-center justify-center text-[10px] font-bold ${theme.textMain} shadow-sm`}>{idx + 1}</span>
-                          <span className={`font-bold ${theme.textMain} text-sm truncate pr-2`}>{ex.name}</span>
+                      <React.Fragment key={item.id + idx}>
+                        <div className={`flex items-center justify-between ${theme.bgMain10} border ${theme.borderMain20} p-3 rounded-2xl relative z-20 shadow-sm`}>
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <span className={`w-6 h-6 shrink-0 bg-white rounded-full flex items-center justify-center text-[10px] font-bold ${theme.textMain} shadow-sm`}>{idx + 1}</span>
+                            <span className={`font-bold ${theme.textMain} text-sm truncate pr-2`}>{ex.name}</span>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0 bg-white/50 rounded-xl p-1">
+                            <button onClick={() => moveExercise(idx, 'up')} disabled={idx === 0} className="p-1.5 text-slate-400 hover:text-slate-800 disabled:opacity-30 transition-colors"><ArrowUp size={16}/></button>
+                            <button onClick={() => moveExercise(idx, 'down')} disabled={idx === selectedExercisesForRoutine.length - 1} className="p-1.5 text-slate-400 hover:text-slate-800 disabled:opacity-30 transition-colors"><ArrowDown size={16}/></button>
+                            <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                            <button onClick={() => setSelectedExercisesForRoutine(selectedExercisesForRoutine.filter((_, i) => i !== idx))} className="p-1.5 text-rose-400 hover:text-rose-600 transition-colors"><Trash2 size={16}/></button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0 bg-white/50 rounded-xl p-1">
-                          <button onClick={() => moveExercise(idx, 'up')} disabled={idx === 0} className="p-1.5 text-slate-400 hover:text-slate-800 disabled:opacity-30 transition-colors"><ArrowUp size={16}/></button>
-                          <button onClick={() => moveExercise(idx, 'down')} disabled={idx === selectedExercisesForRoutine.length - 1} className="p-1.5 text-slate-400 hover:text-slate-800 disabled:opacity-30 transition-colors"><ArrowDown size={16}/></button>
-                          <div className="w-px h-4 bg-slate-200 mx-1"></div>
-                          <button onClick={() => setSelectedExercisesForRoutine(selectedExercisesForRoutine.filter((_, i) => i !== idx))} className="p-1.5 text-rose-400 hover:text-rose-600 transition-colors"><Trash2 size={16}/></button>
-                        </div>
-                      </div>
+                        
+                        {/* PRZYCISK ŁĄCZENIA W SUPERSERIĘ */}
+                        {idx < selectedExercisesForRoutine.length - 1 && (
+                          <div className="flex justify-center -my-2.5 relative z-10">
+                             <button 
+                               onClick={() => toggleLink(idx)} 
+                               className={`p-1.5 rounded-full border-[3px] transition-all duration-300 ${item.linked ? `bg-slate-800 border-white text-white shadow-md z-30 scale-110` : 'bg-white border-slate-100 text-slate-300 hover:text-slate-500 hover:bg-slate-50 z-10'}`} 
+                               title="Połącz w superserię"
+                             >
+                                <Link size={14} strokeWidth={item.linked ? 3 : 2} />
+                             </button>
+                          </div>
+                        )}
+                      </React.Fragment>
                     )
                   })}
                 </div>
@@ -507,10 +533,10 @@ export default function App() {
             <div>
               <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Dostępne ćwiczenia</p>
               <div className="max-h-56 overflow-y-auto space-y-2 border border-slate-100 rounded-2xl p-2 bg-slate-50/50 custom-scrollbar">
-                {exercises.filter(ex => !selectedExercisesForRoutine.includes(ex.id)).map(ex => (
+                {exercises.filter(ex => !selectedExercisesForRoutine.some(s => s.id === ex.id)).map(ex => (
                   <div 
                     key={ex.id} 
-                    onClick={() => setSelectedExercisesForRoutine([...selectedExercisesForRoutine, ex.id])} 
+                    onClick={() => setSelectedExercisesForRoutine([...selectedExercisesForRoutine, {id: ex.id, linked: false}])} 
                     className="flex items-center justify-between bg-white border border-slate-100 shadow-sm hover:shadow-md hover:border-slate-300 p-3.5 rounded-xl cursor-pointer transition-all"
                   >
                     <div className="flex items-center gap-3">
@@ -527,7 +553,7 @@ export default function App() {
                     </div>
                   </div>
                 ))}
-                {exercises.filter(ex => !selectedExercisesForRoutine.includes(ex.id)).length === 0 && (
+                {exercises.filter(ex => !selectedExercisesForRoutine.some(s => s.id === ex.id)).length === 0 && (
                   <p className="text-sm text-slate-400 text-center py-6 font-medium">Wszystkie ćwiczenia dodane!</p>
                 )}
               </div>
@@ -676,8 +702,39 @@ export default function App() {
       return "Brak historii dla tego ćwiczenia";
     };
 
+    // ALGOTRYTM GRUPOWANIA SUPERSERII
+    const groupedExercises = [];
+    let currentGroup = [];
+    activeWorkout.exercises.forEach((ex, idx) => {
+      currentGroup.push({ ...ex, originalIndex: idx });
+      if (!ex.linked) {
+        groupedExercises.push(currentGroup);
+        currentGroup = [];
+      }
+    });
+    if (currentGroup.length > 0) groupedExercises.push(currentGroup); // Zabezpieczenie dla ostatniego elementu
+
     return (
       <div className="pb-32">
+        <style>{`
+          @keyframes shineSweep {
+            0% { transform: translateX(-200%) skewX(-30deg); }
+            100% { transform: translateX(200%) skewX(-30deg); }
+          }
+          @keyframes olympicGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(250, 204, 21, 0.4), inset 0 0 20px rgba(250, 204, 21, 0.2); border-color: rgba(250, 204, 21, 0.7); }
+            50% { box-shadow: 0 0 35px rgba(250, 204, 21, 0.8), inset 0 0 40px rgba(250, 204, 21, 0.4); border-color: rgba(253, 224, 71, 1); }
+          }
+          @keyframes intenseSparkle {
+            0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1.5) rotate(90deg); filter: brightness(1.5); }
+          }
+          .sparkle-1 { animation: intenseSparkle 2s infinite ease-in-out 0.1s; }
+          .sparkle-2 { animation: intenseSparkle 3s infinite ease-in-out 1.2s; }
+          .sparkle-3 { animation: intenseSparkle 2.5s infinite ease-in-out 0.5s; }
+          .sparkle-4 { animation: intenseSparkle 3.2s infinite ease-in-out 1.8s; }
+          .sparkle-5 { animation: intenseSparkle 2.2s infinite ease-in-out 2.5s; }
+        `}</style>
         <div className="sticky top-0 bg-white/80 backdrop-blur-xl border-b border-slate-100 p-4 shadow-sm z-10 flex justify-between items-center rounded-b-[32px]">
           <div className="flex items-center gap-3 overflow-hidden">
             <div 
@@ -704,196 +761,228 @@ export default function App() {
         </div>
 
         <div className="p-4 space-y-6">
-          {activeWorkout.exercises.map((workoutEx, exIndex) => {
-            const exerciseDetails = exercises.find(e => e.id === workoutEx.exerciseId);
-            if (!exerciseDetails) return null;
+          {groupedExercises.map((group, groupIdx) => {
+            const isSuperset = group.length > 1;
 
             return (
-              <div key={exIndex} className="bg-white rounded-[32px] shadow-xl shadow-slate-200/40 border border-slate-100 overflow-hidden">
-                <div className="bg-slate-50/50 p-5 border-b border-slate-100 flex justify-between items-center">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center ${theme.textMain} shadow-sm shrink-0`}>
-                      <MuscleIcon category={exerciseDetails.target.split(' - ')[0]} className="w-6 h-6" />
+              <div key={groupIdx} className={isSuperset ? "relative rounded-[36px] p-2.5 pt-9 border-[3px] border-yellow-400 bg-gradient-to-br from-yellow-100 via-amber-100 to-yellow-200 overflow-visible my-6" : ""}>
+                {/* ETYKIETA SUPERSERII ORAZ ANIMACJE ZŁOTA */}
+                {isSuperset && (
+                  <>
+                    <div className="absolute inset-0 rounded-[34px] overflow-hidden pointer-events-none z-0" style={{ animation: 'olympicGlow 3s ease-in-out infinite' }}>
+                       {/* Błyszcząca fala świetlna (przesuwający się refleks) */}
+                       <div className="absolute top-0 left-0 w-[50%] h-full bg-gradient-to-r from-transparent via-white/80 to-transparent pointer-events-none" style={{ animation: 'shineSweep 3s infinite linear' }}></div>
+                       
+                       {/* Bardzo mocne drobinki złota */}
+                       <div className="absolute top-[10%] left-[10%] w-3 h-3 bg-white rounded-full sparkle-1 shadow-[0_0_15px_#fef08a]"></div>
+                       <div className="absolute bottom-[20%] right-[5%] w-4 h-4 bg-yellow-100 rounded-full sparkle-2 shadow-[0_0_20px_#fde047]"></div>
+                       <div className="absolute top-[50%] left-[3%] w-2 h-2 bg-white rounded-full sparkle-3 shadow-[0_0_10px_#fef08a]"></div>
+                       <div className="absolute top-[25%] right-[12%] w-3 h-3 bg-yellow-50 rounded-full sparkle-4 shadow-[0_0_15px_#fde047]"></div>
+                       <div className="absolute bottom-[10%] left-[40%] w-2.5 h-2.5 bg-white rounded-full sparkle-5 shadow-[0_0_12px_#fef08a]"></div>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-black text-slate-800 text-lg">{exerciseDetails.name}</h3>
-                        <button 
-                          onClick={() => toggleChart(exerciseDetails.id)} 
-                          className={`${theme.textSec} ${theme.bgSec10} p-2 rounded-xl ${theme.hoverBgSec20} transition-all shadow-sm shrink-0`}
-                        >
-                          <BarChart2 size={18} strokeWidth={2.5} />
-                        </button>
-                      </div>
-                      <p className={`text-[11px] font-bold uppercase tracking-wider mt-1 ${theme.textMain} opacity-80`}>{getLastExercisePerformance(exerciseDetails.id)}</p>
+
+                    <div className="absolute -top-5 left-6 bg-gradient-to-r from-yellow-300 via-yellow-100 to-amber-400 text-amber-900 text-[12px] font-black px-6 py-2.5 rounded-full uppercase tracking-widest shadow-[0_8px_20px_rgba(251,191,36,0.6)] flex items-center gap-2 z-20 border-[3px] border-white">
+                      <Link size={16} strokeWidth={3} /> Superseria
                     </div>
-                  </div>
-                </div>
-                
-                {expandedCharts[exerciseDetails.id] && (
-                  <div className="bg-white border-b border-slate-100 p-5">
-                    {(() => {
-                      const chartData = history
-                        .filter(h => h.exercises?.some(e => e.exerciseId === exerciseDetails.id))
-                        .slice(0, 6)
-                        .map(session => {
-                          const exData = session.exercises.find(e => e.exerciseId === exerciseDetails.id);
-                          const validSets = exData.sets.filter(s => parseFloat(String(s.weight).replace(',', '.')) > 0 && parseInt(s.reps) > 0);
-                          const totalW = validSets.reduce((acc, s) => acc + parseFloat(String(s.weight).replace(',', '.')), 0);
-                          const totalR = validSets.reduce((acc, s) => acc + parseInt(s.reps), 0);
-                          return {
-                            date: session.date,
-                            shortDate: new Date(session.timestamp).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' }),
-                            avgW: validSets.length ? totalW / validSets.length : 0,
-                            avgR: validSets.length ? totalR / validSets.length : 0,
-                            sets: validSets
-                          };
-                        })
-                        .reverse();
-
-                      if (chartData.length === 0) {
-                        return <p className="text-sm text-slate-400 font-medium text-center py-4 bg-slate-50 rounded-2xl border border-slate-100">Brak zapisanej historii dla tego ćwiczenia.</p>;
-                      }
-
-                      const latest = chartData[chartData.length - 1];
-                      const maxW = Math.max(...chartData.map(d => d.avgW), 10);
-                      const maxR = Math.max(...chartData.map(d => d.avgR), 5);
-                      
-                      const width = 300;
-                      const height = 150;
-                      const padX = 20;
-                      const padY = 25;
-                      const chartW = width - padX * 2;
-                      const chartH = height - padY * 2;
-                      const spacing = chartData.length > 1 ? chartW / (chartData.length - 1) : 0;
-                      const getX = (i) => chartData.length === 1 ? width / 2 : padX + i * spacing;
-                      
-                      const pointsLineW = chartData.map((d, i) => `${getX(i) - 8},${padY + chartH - (d.avgW / maxW) * chartH}`).join(' ');
-                      const pointsLineR = chartData.map((d, i) => `${getX(i) + 8},${padY + chartH - (d.avgR / maxR) * chartH}`).join(' ');
-
-                      return (
-                        <div className="space-y-5">
-                          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
-                            <h4 className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest text-center">Ostatnia sesja ({latest.date})</h4>
-                            {latest.sets.length === 0 ? (
-                              <p className="text-xs text-slate-400 text-center font-medium">Brak zapisanych poprawnie serii.</p>
-                            ) : (
-                              <>
-                                <div className="grid grid-cols-3 gap-2 text-[10px] text-slate-400 font-black border-b border-slate-200 pb-2 mb-3 uppercase tracking-widest">
-                                  <div className="text-center">Seria</div>
-                                  <div className="text-center">kg</div>
-                                  <div className="text-center">Powt.</div>
-                                </div>
-                                <div className="space-y-2">
-                                  {latest.sets.map((s, idx) => (
-                                    <div key={idx} className="grid grid-cols-3 gap-2 text-xs text-slate-700 py-1 bg-white rounded-lg shadow-sm border border-slate-100">
-                                      <div className="text-center font-black text-slate-400 py-1">#{idx + 1}</div>
-                                      <div className={`text-center font-black ${theme.textSec} py-1`}>{s.weight}</div>
-                                      <div className={`text-center font-black ${theme.textMain} py-1`}>{s.reps}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </>
-                            )}
-                          </div>
-
-                          <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 relative">
-                            <div className="flex justify-between items-center mb-4">
-                              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Wykres (max 6)</h4>
-                              <div className="flex gap-3 text-[9px] font-black uppercase tracking-wider">
-                                <span className={`${theme.textSec} flex items-center gap-1.5`}>
-                                  <div className={`w-2.5 h-2.5 ${theme.bgSec30} border ${theme.borderSec} rounded-sm`}></div> ŚR. KG
-                                </span>
-                                <span className={`${theme.textMain} flex items-center gap-1.5`}>
-                                  <div className={`w-2.5 h-2.5 ${theme.bgMain10} border ${theme.borderMain20} rounded-sm`}></div> ŚR. POWT.
-                                </span>
-                              </div>
-                            </div>
-                            
-                            <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible mt-2">
-                              {/* Soft grid lines */}
-                              <line x1="0" y1={padY} x2={width} y2={padY} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
-                              <line x1="0" y1={padY + chartH/2} x2={width} y2={padY + chartH/2} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
-                              <line x1="0" y1={padY + chartH} x2={width} y2={padY + chartH} stroke="#cbd5e1" strokeWidth="1" />
-
-                              <polyline points={pointsLineW} fill="none" stroke={theme.chartSecFill} strokeWidth="2" strokeDasharray="4 4" className="opacity-40" />
-                              <polyline points={pointsLineR} fill="none" stroke={theme.textMain.replace('text-', '').split('-')[0] === 'emerald' ? '#10b981' : '#f43f5e'} strokeWidth="2" strokeDasharray="4 4" className="opacity-40" />
-
-                              {chartData.map((d, i) => {
-                                const x = getX(i);
-                                const xW = x - 8;
-                                const xR = x + 8;
-                                const hW = (d.avgW / maxW) * chartH;
-                                const yW = padY + chartH - hW;
-                                const hR = (d.avgR / maxR) * chartH;
-                                const yR = padY + chartH - hR;
-
-                                return (
-                                  <g key={`day-${i}`}>
-                                    <rect x={xW - 5} y={yW} width="10" height={hW} className={`${theme.fillSec20} ${theme.hoverFillSec40} transition-colors cursor-pointer`} rx="3" />
-                                    <circle cx={xW} cy={yW} r="3" fill={theme.chartSecFill} stroke="#fff" strokeWidth="1.5" />
-                                    <text x={xW} y={yW - 8} fontSize="9" fill={theme.chartSecFill} textAnchor="middle" fontWeight="bold">{Math.round(d.avgW)}</text>
-
-                                    <rect x={xR - 5} y={yR} width="10" height={hR} className={`${theme.fillMain20} transition-colors cursor-pointer`} rx="3" />
-                                    <circle cx={xR} cy={yR} r="3" fill={theme.textMain.replace('text-', '').split('-')[0] === 'emerald' ? '#10b981' : '#f43f5e'} stroke="#fff" strokeWidth="1.5" />
-                                    <text x={xR} y={yR - 8} fontSize="9" fill={theme.textMain.replace('text-', '').split('-')[0] === 'emerald' ? '#10b981' : '#f43f5e'} textAnchor="middle" fontWeight="bold">{Math.round(d.avgR)}</text>
-
-                                    <text x={x} y={height - 2} fontSize="9" fill="#94a3b8" textAnchor="middle" fontWeight="bold">{d.shortDate}</text>
-                                  </g>
-                                );
-                              })}
-                            </svg>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
+                  </>
                 )}
+                
+                <div className={isSuperset ? "relative z-10 space-y-3" : ""}>
+                  {group.map((workoutEx) => {
+                    const exIndex = workoutEx.originalIndex;
+                    const exerciseDetails = exercises.find(e => e.id === workoutEx.exerciseId);
+                    if (!exerciseDetails) return null;
 
-                <div className="p-5">
-                  <div className="grid grid-cols-12 gap-2 mb-3 text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">
-                    <div className="col-span-2 text-center">Seria</div>
-                    <div className="col-span-5 text-center">kg</div>
-                    <div className="col-span-5 text-center">Powt.</div>
-                  </div>
+                    return (
+                      <div key={exIndex} className={`bg-white rounded-[32px] overflow-hidden ${isSuperset ? 'shadow-sm border border-slate-100' : 'shadow-xl shadow-slate-200/40 border border-slate-100'}`}>
+                        <div className="bg-slate-50/50 p-5 border-b border-slate-100 flex justify-between items-center">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center ${theme.textMain} shadow-sm shrink-0`}>
+                              <MuscleIcon category={exerciseDetails.target.split(' - ')[0]} className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-3">
+                                <h3 className="font-black text-slate-800 text-lg">{exerciseDetails.name}</h3>
+                                <button 
+                                  onClick={() => toggleChart(exerciseDetails.id)} 
+                                  className={`${theme.textSec} ${theme.bgSec10} p-2 rounded-xl ${theme.hoverBgSec20} transition-all shadow-sm shrink-0`}
+                                >
+                                  <BarChart2 size={18} strokeWidth={2.5} />
+                                </button>
+                              </div>
+                              <p className={`text-[11px] font-bold uppercase tracking-wider mt-1 ${theme.textMain} opacity-80`}>{getLastExercisePerformance(exerciseDetails.id)}</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {expandedCharts[exerciseDetails.id] && (
+                          <div className="bg-white border-b border-slate-100 p-5">
+                            {(() => {
+                              const chartData = history
+                                .filter(h => h.exercises?.some(e => e.exerciseId === exerciseDetails.id))
+                                .slice(0, 6)
+                                .map(session => {
+                                  const exData = session.exercises.find(e => e.exerciseId === exerciseDetails.id);
+                                  const validSets = exData.sets.filter(s => parseFloat(String(s.weight).replace(',', '.')) > 0 && parseInt(s.reps) > 0);
+                                  const totalW = validSets.reduce((acc, s) => acc + parseFloat(String(s.weight).replace(',', '.')), 0);
+                                  const totalR = validSets.reduce((acc, s) => acc + parseInt(s.reps), 0);
+                                  return {
+                                    date: session.date,
+                                    shortDate: new Date(session.timestamp).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' }),
+                                    avgW: validSets.length ? totalW / validSets.length : 0,
+                                    avgR: validSets.length ? totalR / validSets.length : 0,
+                                    sets: validSets
+                                  };
+                                })
+                                .reverse();
 
-                  <div className="space-y-3">
-                    {workoutEx.sets.map((set, setIndex) => (
-                      <div 
-                        key={setIndex} 
-                        className="grid grid-cols-12 gap-2 items-center p-2 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm"
-                      >
-                        <div className="col-span-2 text-center font-black text-slate-400">
-                          {setIndex + 1}
-                        </div>
-                        <div className="col-span-5">
-                          <input 
-                            type="number" 
-                            placeholder="-"
-                            value={set.weight}
-                            onChange={(e) => updateSet(exIndex, setIndex, 'weight', e.target.value)}
-                            className={`w-full text-center p-2.5 bg-white border border-slate-200 rounded-xl font-black text-slate-800 focus:ring-2 ${theme.focusRingMain} ${theme.focusBorderMain} transition-all outline-none shadow-sm`}
-                          />
-                        </div>
-                        <div className="col-span-5">
-                          <input 
-                            type="number" 
-                            placeholder="-"
-                            value={set.reps}
-                            onChange={(e) => updateSet(exIndex, setIndex, 'reps', e.target.value)}
-                            className={`w-full text-center p-2.5 bg-white border border-slate-200 rounded-xl font-black text-slate-800 focus:ring-2 ${theme.focusRingMain} ${theme.focusBorderMain} transition-all outline-none shadow-sm`}
-                          />
+                              if (chartData.length === 0) {
+                                return <p className="text-sm text-slate-400 font-medium text-center py-4 bg-slate-50 rounded-2xl border border-slate-100">Brak zapisanej historii dla tego ćwiczenia.</p>;
+                              }
+
+                              const latest = chartData[chartData.length - 1];
+                              const maxW = Math.max(...chartData.map(d => d.avgW), 10);
+                              const maxR = Math.max(...chartData.map(d => d.avgR), 5);
+                              
+                              const width = 300;
+                              const height = 150;
+                              const padX = 20;
+                              const padY = 25;
+                              const chartW = width - padX * 2;
+                              const chartH = height - padY * 2;
+                              const spacing = chartData.length > 1 ? chartW / (chartData.length - 1) : 0;
+                              const getX = (i) => chartData.length === 1 ? width / 2 : padX + i * spacing;
+                              
+                              const pointsLineW = chartData.map((d, i) => `${getX(i) - 8},${padY + chartH - (d.avgW / maxW) * chartH}`).join(' ');
+                              const pointsLineR = chartData.map((d, i) => `${getX(i) + 8},${padY + chartH - (d.avgR / maxR) * chartH}`).join(' ');
+
+                              return (
+                                <div className="space-y-5">
+                                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                                    <h4 className="text-[10px] font-black text-slate-400 uppercase mb-3 tracking-widest text-center">Ostatnia sesja ({latest.date})</h4>
+                                    {latest.sets.length === 0 ? (
+                                      <p className="text-xs text-slate-400 text-center font-medium">Brak zapisanych poprawnie serii.</p>
+                                    ) : (
+                                      <>
+                                        <div className="grid grid-cols-3 gap-2 text-[10px] text-slate-400 font-black border-b border-slate-200 pb-2 mb-3 uppercase tracking-widest">
+                                          <div className="text-center">Seria</div>
+                                          <div className="text-center">kg</div>
+                                          <div className="text-center">Powt.</div>
+                                        </div>
+                                        <div className="space-y-2">
+                                          {latest.sets.map((s, idx) => (
+                                            <div key={idx} className="grid grid-cols-3 gap-2 text-xs text-slate-700 py-1 bg-white rounded-lg shadow-sm border border-slate-100">
+                                              <div className="text-center font-black text-slate-400 py-1">#{idx + 1}</div>
+                                              <div className={`text-center font-black ${theme.textSec} py-1`}>{s.weight}</div>
+                                              <div className={`text-center font-black ${theme.textMain} py-1`}>{s.reps}</div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </>
+                                    )}
+                                  </div>
+
+                                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 relative">
+                                    <div className="flex justify-between items-center mb-4">
+                                      <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Wykres (max 6)</h4>
+                                      <div className="flex gap-3 text-[9px] font-black uppercase tracking-wider">
+                                        <span className={`${theme.textSec} flex items-center gap-1.5`}>
+                                          <div className={`w-2.5 h-2.5 ${theme.bgSec30} border ${theme.borderSec} rounded-sm`}></div> ŚR. KG
+                                        </span>
+                                        <span className={`${theme.textMain} flex items-center gap-1.5`}>
+                                          <div className={`w-2.5 h-2.5 ${theme.bgMain10} border ${theme.borderMain20} rounded-sm`}></div> ŚR. POWT.
+                                        </span>
+                                      </div>
+                                    </div>
+                                    
+                                    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible mt-2">
+                                      {/* Soft grid lines */}
+                                      <line x1="0" y1={padY} x2={width} y2={padY} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
+                                      <line x1="0" y1={padY + chartH/2} x2={width} y2={padY + chartH/2} stroke="#e2e8f0" strokeWidth="1" strokeDasharray="4 4" />
+                                      <line x1="0" y1={padY + chartH} x2={width} y2={padY + chartH} stroke="#cbd5e1" strokeWidth="1" />
+
+                                      <polyline points={pointsLineW} fill="none" stroke={theme.chartSecFill} strokeWidth="2" strokeDasharray="4 4" className="opacity-40" />
+                                      <polyline points={pointsLineR} fill="none" stroke={theme.textMain.replace('text-', '').split('-')[0] === 'emerald' ? '#10b981' : '#f43f5e'} strokeWidth="2" strokeDasharray="4 4" className="opacity-40" />
+
+                                      {chartData.map((d, i) => {
+                                        const x = getX(i);
+                                        const xW = x - 8;
+                                        const xR = x + 8;
+                                        const hW = (d.avgW / maxW) * chartH;
+                                        const yW = padY + chartH - hW;
+                                        const hR = (d.avgR / maxR) * chartH;
+                                        const yR = padY + chartH - hR;
+
+                                        return (
+                                          <g key={`day-${i}`}>
+                                            <rect x={xW - 5} y={yW} width="10" height={hW} className={`${theme.fillSec20} ${theme.hoverFillSec40} transition-colors cursor-pointer`} rx="3" />
+                                            <circle cx={xW} cy={yW} r="3" fill={theme.chartSecFill} stroke="#fff" strokeWidth="1.5" />
+                                            <text x={xW} y={yW - 8} fontSize="9" fill={theme.chartSecFill} textAnchor="middle" fontWeight="bold">{Math.round(d.avgW)}</text>
+
+                                            <rect x={xR - 5} y={yR} width="10" height={hR} className={`${theme.fillMain20} transition-colors cursor-pointer`} rx="3" />
+                                            <circle cx={xR} cy={yR} r="3" fill={theme.textMain.replace('text-', '').split('-')[0] === 'emerald' ? '#10b981' : '#f43f5e'} stroke="#fff" strokeWidth="1.5" />
+                                            <text x={xR} y={yR - 8} fontSize="9" fill={theme.textMain.replace('text-', '').split('-')[0] === 'emerald' ? '#10b981' : '#f43f5e'} textAnchor="middle" fontWeight="bold">{Math.round(d.avgR)}</text>
+
+                                            <text x={x} y={height - 2} fontSize="9" fill="#94a3b8" textAnchor="middle" fontWeight="bold">{d.shortDate}</text>
+                                          </g>
+                                        );
+                                      })}
+                                    </svg>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
+
+                        <div className="p-5">
+                          <div className="grid grid-cols-12 gap-2 mb-3 text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">
+                            <div className="col-span-2 text-center">Seria</div>
+                            <div className="col-span-5 text-center">kg</div>
+                            <div className="col-span-5 text-center">Powt.</div>
+                          </div>
+
+                          <div className="space-y-3">
+                            {workoutEx.sets.map((set, setIndex) => (
+                              <div 
+                                key={setIndex} 
+                                className="grid grid-cols-12 gap-2 items-center p-2 bg-slate-50 rounded-2xl border border-slate-100 shadow-sm"
+                              >
+                                <div className="col-span-2 text-center font-black text-slate-400">
+                                  {setIndex + 1}
+                                </div>
+                                <div className="col-span-5">
+                                  <input 
+                                    type="number" 
+                                    placeholder="-"
+                                    value={set.weight}
+                                    onChange={(e) => updateSet(exIndex, setIndex, 'weight', e.target.value)}
+                                    className={`w-full text-center p-2.5 bg-white border border-slate-200 rounded-xl font-black text-slate-800 focus:ring-2 ${theme.focusRingMain} ${theme.focusBorderMain} transition-all outline-none shadow-sm`}
+                                  />
+                                </div>
+                                <div className="col-span-5">
+                                  <input 
+                                    type="number" 
+                                    placeholder="-"
+                                    value={set.reps}
+                                    onChange={(e) => updateSet(exIndex, setIndex, 'reps', e.target.value)}
+                                    className={`w-full text-center p-2.5 bg-white border border-slate-200 rounded-xl font-black text-slate-800 focus:ring-2 ${theme.focusRingMain} ${theme.focusBorderMain} transition-all outline-none shadow-sm`}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <button 
+                            onClick={() => addSet(exIndex)}
+                            className={`mt-5 w-full py-4 text-sm font-bold ${theme.textMain} bg-white border-2 border-dashed ${theme.borderMain20} hover:border-solid rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm`}
+                          >
+                            <Plus size={18} strokeWidth={3} /> Dodaj serię
+                          </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-
-                  <button 
-                    onClick={() => addSet(exIndex)}
-                    className={`mt-5 w-full py-4 text-sm font-bold ${theme.textMain} bg-white border-2 border-dashed ${theme.borderMain20} hover:border-solid rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm`}
-                  >
-                    <Plus size={18} strokeWidth={3} /> Dodaj serię
-                  </button>
+                    );
+                  })}
                 </div>
               </div>
             );
