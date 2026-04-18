@@ -169,12 +169,12 @@ export default function App() {
 
   useEffect(() => {
     const config = {
-      apiKey: "TWOJE_API_KEY",
-      authDomain: "TWOJA_DOMENA",
-      projectId: "TWOJE_ID",
-      storageBucket: "TWOJE_BUCKET",
-      messagingSenderId: "TWOJE_SENDER_ID",
-      appId: "TWOJE_APP_ID"
+      apiKey: "AIzaSyDS1P1H4IrXG6CCU3kIQ4LZcKtEypgEIIc",
+      authDomain: "ronnie-silka.firebaseapp.com",
+      projectId: "ronnie-silka",
+      storageBucket: "ronnie-silka.firebasestorage.app",
+      messagingSenderId: "225312176403",
+      appId: "1:225312176403:web:3416595fe94083b60f02e6"
     };
 
     if (config.apiKey !== "TWOJE_API_KEY") {
