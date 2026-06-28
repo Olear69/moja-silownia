@@ -989,7 +989,7 @@ export default function App() {
               let cardStyle = "w-full bg-white p-6 rounded-[32px] shadow-lg shadow-slate-200/50 border border-slate-100 flex justify-between items-center hover:border-slate-300 hover:shadow-xl hover:shadow-slate-200/60 transition-all group text-left relative overflow-hidden";
               
               if (isDone) {
-                cardStyle = "w-full bg-slate-100/80 p-6 rounded-[32px] border-2 border-rose-300 flex justify-between items-center opacity-60 hover:opacity-100 transition-all group text-left relative overflow-hidden shadow-none";
+                cardStyle = "w-full bg-slate-200/80 p-6 rounded-[32px] border border-slate-300 flex justify-between items-center opacity-70 hover:opacity-95 transition-all group text-left relative overflow-hidden shadow-none";
               } else if (isNext) {
                 cardStyle = "w-full p-6 rounded-[32px] border-[3px] border-yellow-400 bg-gradient-to-br from-yellow-100 via-amber-100 to-yellow-200 flex justify-between items-center shadow-[0_0_25px_rgba(250,204,21,0.5)] transition-all group text-left relative overflow-hidden";
               }
@@ -1008,24 +1008,12 @@ export default function App() {
                   )}
 
                   <div className="relative z-10">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className={`font-black text-xl text-slate-800 ${isDone ? 'line-through text-slate-600' : theme.groupHoverTextMain} transition-colors`}>{routine.name}</h4>
-                      {isDone && (
-                        <span className="bg-rose-100 text-rose-600 border border-rose-200 font-bold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-lg">
-                          ✓ Wykonany
-                        </span>
-                      )}
-                      {isNext && (
-                        <span className="bg-yellow-400 text-amber-950 font-black text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-white shadow-sm">
-                          🔥 Następny
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-wide">
-                      {routine.exercises.length} ćwiczeń • Ostatnio: <span className="text-slate-500">{getRoutineLastDone(routine.name)}</span>
+                    <h4 className={`font-black text-xl ${isDone ? 'text-slate-600' : 'text-slate-800'} ${theme.groupHoverTextMain} transition-colors mb-1`}>{routine.name}</h4>
+                    <p className={`text-sm font-bold ${isDone ? 'text-slate-500' : 'text-slate-400'} mt-1 uppercase tracking-wide`}>
+                      {routine.exercises.length} ćwiczeń • Ostatnio: <span className={isDone ? 'text-slate-600' : 'text-slate-500'}>{getRoutineLastDone(routine.name)}</span>
                     </p>
                   </div>
-                  <div className={`relative z-10 ${isNext ? 'bg-amber-400 text-amber-950 border border-yellow-300 shadow-md' : isDone ? 'bg-slate-200 text-slate-500 border border-slate-300' : `bg-slate-50 border border-slate-100 ${theme.textMain} group-hover:bg-gradient-to-r ${theme.gradHover} group-hover:text-white`} p-4 rounded-2xl transition-all shadow-sm ${theme.groupHoverShadowMain20}`}>
+                  <div className={`relative z-10 ${isNext ? 'bg-amber-400 text-amber-950 border border-yellow-300 shadow-md' : isDone ? 'bg-slate-300 text-slate-600 border border-slate-400' : `bg-slate-50 border border-slate-100 ${theme.textMain} group-hover:bg-gradient-to-r ${theme.gradHover} group-hover:text-white`} p-4 rounded-2xl transition-all shadow-sm ${theme.groupHoverShadowMain20}`}>
                     <Play size={24} fill="currentColor" strokeWidth={1} />
                   </div>
                 </button>
