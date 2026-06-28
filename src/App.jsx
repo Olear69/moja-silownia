@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dumbbell, List, Play, Plus, Trash2, Check, X, Save, History, ChevronRight, BarChart2, Pencil, ArrowUp, ArrowDown, Cloud, CloudOff, LogOut, Link, RefreshCw } from 'lucide-react';
+import { Dumbbell, List, Play, Plus, Trash2, Check, X, Save, History, ChevronRight, BarChart2, Pencil, ArrowUp, ArrowDown, Cloud, CloudOff, LogOut, Link, RefreshCw, Star } from 'lucide-react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
@@ -149,6 +149,42 @@ export default function App() {
   const activeWorkout = currentUser === 'turtle' ? activeWorkoutTurtle : activeWorkoutBlonde;
   const setActiveWorkout = currentUser === 'turtle' ? setActiveWorkoutTurtle : setActiveWorkoutBlonde;
 
+  // Stany kolejności planów dla profili
+  const [routineOrderTurtle, setRoutineOrderTurtle] = useState(() => {
+    const saved = localStorage.getItem('gym_routineOrder_turtle');
+    return saved ? JSON.parse(saved) : defaultRoutines.map(r => r.id);
+  });
+  const [routineOrderBlonde, setRoutineOrderBlonde] = useState(() => {
+    const saved = localStorage.getItem('gym_routineOrder_blonde');
+    return saved ? JSON.parse(saved) : defaultRoutines.map(r => r.id);
+  });
+  const routineOrder = currentUser === 'turtle' ? routineOrderTurtle : routineOrderBlonde;
+  const setRoutineOrder = currentUser === 'turtle' ? setRoutineOrderTurtle : setRoutineOrderBlonde;
+
+  // Stany ulubionych planów (gwiazdki)
+  const [favoritesTurtle, setFavoritesTurtle] = useState(() => {
+    const saved = localStorage.getItem('gym_favorites_turtle');
+    return saved ? JSON.parse(saved) : defaultRoutines.map(r => r.id);
+  });
+  const [favoritesBlonde, setFavoritesBlonde] = useState(() => {
+    const saved = localStorage.getItem('gym_favorites_blonde');
+    return saved ? JSON.parse(saved) : defaultRoutines.map(r => r.id);
+  });
+  const favorites = currentUser === 'turtle' ? favoritesTurtle : favoritesBlonde;
+  const setFavorites = currentUser === 'turtle' ? setFavoritesTurtle : setFavoritesBlonde;
+
+  // Stany wykonanych planów w obecnym cyklu
+  const [completedInCycleTurtle, setCompletedInCycleTurtle] = useState(() => {
+    const saved = localStorage.getItem('gym_completedInCycle_turtle');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [completedInCycleBlonde, setCompletedInCycleBlonde] = useState(() => {
+    const saved = localStorage.getItem('gym_completedInCycle_blonde');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const completedInCycle = currentUser === 'turtle' ? completedInCycleTurtle : completedInCycleBlonde;
+  const setCompletedInCycle = currentUser === 'turtle' ? setCompletedInCycleTurtle : setCompletedInCycleBlonde;
+
   const [summaryData, setSummaryData] = useState(null);
   const [showFinishConfirm, setShowFinishConfirm] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false); 
@@ -216,6 +252,12 @@ export default function App() {
           if (data.routines) setRoutines(data.routines);
           if (data.historyTurtle) setHistoryTurtle(data.historyTurtle);
           if (data.historyBlonde) setHistoryBlonde(data.historyBlonde);
+          if (data.routineOrderTurtle) setRoutineOrderTurtle(data.routineOrderTurtle);
+          if (data.routineOrderBlonde) setRoutineOrderBlonde(data.routineOrderBlonde);
+          if (data.favoritesTurtle) setFavoritesTurtle(data.favoritesTurtle);
+          if (data.favoritesBlonde) setFavoritesBlonde(data.favoritesBlonde);
+          if (data.completedInCycleTurtle) setCompletedInCycleTurtle(data.completedInCycleTurtle);
+          if (data.completedInCycleBlonde) setCompletedInCycleBlonde(data.completedInCycleBlonde);
        }
     }, (err) => console.log("Cloud Error:", err));
     return () => unsub();
@@ -240,6 +282,12 @@ export default function App() {
   useEffect(() => { localStorage.setItem('gym_history_blonde', JSON.stringify(historyBlonde)); }, [historyBlonde]);
   useEffect(() => { localStorage.setItem('gym_activeWorkout_turtle', JSON.stringify(activeWorkoutTurtle)); }, [activeWorkoutTurtle]);
   useEffect(() => { localStorage.setItem('gym_activeWorkout_blonde', JSON.stringify(activeWorkoutBlonde)); }, [activeWorkoutBlonde]);
+  useEffect(() => { localStorage.setItem('gym_routineOrder_turtle', JSON.stringify(routineOrderTurtle)); }, [routineOrderTurtle]);
+  useEffect(() => { localStorage.setItem('gym_routineOrder_blonde', JSON.stringify(routineOrderBlonde)); }, [routineOrderBlonde]);
+  useEffect(() => { localStorage.setItem('gym_favorites_turtle', JSON.stringify(favoritesTurtle)); }, [favoritesTurtle]);
+  useEffect(() => { localStorage.setItem('gym_favorites_blonde', JSON.stringify(favoritesBlonde)); }, [favoritesBlonde]);
+  useEffect(() => { localStorage.setItem('gym_completedInCycle_turtle', JSON.stringify(completedInCycleTurtle)); }, [completedInCycleTurtle]);
+  useEffect(() => { localStorage.setItem('gym_completedInCycle_blonde', JSON.stringify(completedInCycleBlonde)); }, [completedInCycleBlonde]);
 
   useEffect(() => { if (activeTab !== 'history') setSelectedHistoryExercise(null); }, [activeTab]);
 
@@ -416,6 +464,46 @@ export default function App() {
     saveToCloud({ routines: updatedRoutines });
   };
 
+  const getOrderedRoutines = () => {
+    const currentOrder = routineOrder || [];
+    const ordered = [];
+    currentOrder.forEach(id => {
+      const r = routines.find(item => item.id === id);
+      if (r) ordered.push(r);
+    });
+    routines.forEach(r => {
+      if (!ordered.some(item => item.id === r.id)) {
+        ordered.push(r);
+      }
+    });
+    return ordered;
+  };
+
+  const moveRoutineInList = (index, direction) => {
+    const currentOrdered = getOrderedRoutines().map(r => r.id);
+    if (direction === 'up' && index > 0) {
+      [currentOrdered[index - 1], currentOrdered[index]] = [currentOrdered[index], currentOrdered[index - 1]];
+    } else if (direction === 'down' && index < currentOrdered.length - 1) {
+      [currentOrdered[index + 1], currentOrdered[index]] = [currentOrdered[index], currentOrdered[index + 1]];
+    }
+    setRoutineOrder(currentOrdered);
+    const orderKey = currentUser === 'turtle' ? 'routineOrderTurtle' : 'routineOrderBlonde';
+    saveToCloud({ [orderKey]: currentOrdered });
+  };
+
+  const toggleFavoriteRoutine = (routineId) => {
+    const currentFavs = favorites || [];
+    let updatedFavs;
+    if (currentFavs.includes(routineId)) {
+      updatedFavs = currentFavs.filter(id => id !== routineId);
+    } else {
+      updatedFavs = [...currentFavs, routineId];
+    }
+    setFavorites(updatedFavs);
+    const favKey = currentUser === 'turtle' ? 'favoritesTurtle' : 'favoritesBlonde';
+    saveToCloud({ [favKey]: updatedFavs });
+  };
+
   // --- LOGIKA TRENINGU ---
   const startWorkout = (routine) => {
     const exList = routine.exercises.map(ex => typeof ex === 'string' ? { id: ex, linked: false, alternatives: [] } : ex);
@@ -475,6 +563,27 @@ export default function App() {
     
     const historyKey = currentUser === 'turtle' ? 'historyTurtle' : 'historyBlonde';
     saveToCloud({ [historyKey]: updatedHistory });
+
+    // AKTUALIZACJA CYKLU PROGRESJI TRENINGÓW
+    const matchingRoutine = routines.find(r => r.name === activeWorkout.routineName);
+    if (matchingRoutine) {
+      const currentCompleted = completedInCycle || [];
+      let updatedCompleted = Array.from(new Set([...currentCompleted, matchingRoutine.id]));
+      
+      const allOrdered = getOrderedRoutines();
+      const activeFavs = favorites || [];
+      const displayRoutines = allOrdered.filter(r => activeFavs.includes(r.id));
+      const routinesToRender = displayRoutines.length > 0 ? displayRoutines : allOrdered;
+
+      const allDoneInCycle = routinesToRender.every(r => updatedCompleted.includes(r.id));
+      if (allDoneInCycle) {
+        updatedCompleted = [];
+      }
+
+      setCompletedInCycle(updatedCompleted);
+      const cycleKey = currentUser === 'turtle' ? 'completedInCycleTurtle' : 'completedInCycleBlonde';
+      saveToCloud({ [cycleKey]: updatedCompleted });
+    }
 
     setSummaryData(summary); setActiveWorkout(null); setShowFinishConfirm(false);
 
@@ -645,22 +754,41 @@ export default function App() {
             {routines.length === 0 ? (
               <p className="text-slate-400 text-center py-4 font-medium">Nie masz jeszcze żadnych planów.</p>
             ) : (
-              routines.map(routine => (
-                <div key={routine.id} className="bg-white p-5 rounded-[32px] shadow-lg shadow-slate-200/40 border border-slate-100 flex justify-between items-center hover:border-slate-300 transition-all group">
-                  <div>
-                    <h4 className="font-bold text-xl text-slate-800 group-hover:text-slate-900 transition-colors">{routine.name}</h4>
-                    <p className="text-sm font-medium text-slate-400 mt-1">{routine.exercises.length} ćwiczeń</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => openRoutineEditor(routine)} className={`text-slate-400 p-3 bg-slate-50 hover:bg-slate-100 ${theme.hoverTextMain} rounded-2xl transition-colors`}>
-                      <Pencil size={20} />
-                    </button>
-                    <button onClick={() => setRoutineToDelete(routine.id)} className="text-slate-400 p-3 bg-slate-50 hover:bg-red-50 hover:text-red-500 rounded-2xl transition-colors">
-                      <Trash2 size={20} />
-                    </button>
-                  </div>
-                </div>
-              ))
+              (() => {
+                const orderedList = getOrderedRoutines();
+                const activeFavs = favorites || [];
+                return orderedList.map((routine, idx) => {
+                  const isFav = activeFavs.includes(routine.id);
+                  return (
+                    <div key={routine.id} className="bg-white p-5 rounded-[32px] shadow-lg shadow-slate-200/40 border border-slate-100 flex justify-between items-center hover:border-slate-300 transition-all group">
+                      <div className="flex items-center gap-3 overflow-hidden pr-2">
+                        <button 
+                          onClick={() => toggleFavoriteRoutine(routine.id)}
+                          className="p-2.5 rounded-2xl bg-slate-50 hover:bg-yellow-50 transition-colors shrink-0"
+                          title={isFav ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
+                        >
+                          <Star size={22} className={isFav ? "fill-yellow-400 text-yellow-400" : "text-slate-300 hover:text-yellow-400"} strokeWidth={2} />
+                        </button>
+                        <div className="truncate">
+                          <h4 className="font-bold text-xl text-slate-800 group-hover:text-slate-900 transition-colors truncate">{routine.name}</h4>
+                          <p className="text-sm font-medium text-slate-400 mt-0.5">{routine.exercises.length} ćwiczeń</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
+                        <button onClick={() => moveRoutineInList(idx, 'up')} disabled={idx === 0} className="p-2 text-slate-400 hover:text-slate-800 disabled:opacity-30 transition-colors"><ArrowUp size={18}/></button>
+                        <button onClick={() => moveRoutineInList(idx, 'down')} disabled={idx === orderedList.length - 1} className="p-2 text-slate-400 hover:text-slate-800 disabled:opacity-30 transition-colors"><ArrowDown size={18}/></button>
+                        <div className="w-px h-5 bg-slate-200 mx-1"></div>
+                        <button onClick={() => openRoutineEditor(routine)} className={`text-slate-400 p-2 hover:bg-slate-100 ${theme.hoverTextMain} rounded-xl transition-colors`}>
+                          <Pencil size={18} />
+                        </button>
+                        <button onClick={() => setRoutineToDelete(routine.id)} className="text-slate-400 p-2 hover:bg-red-50 hover:text-red-500 rounded-xl transition-colors">
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                });
+              })()
             )}
           </div>
         </>
@@ -833,6 +961,14 @@ export default function App() {
       return `${diffDays} dni temu`;
     };
 
+    const allOrdered = getOrderedRoutines();
+    const activeFavs = favorites || [];
+    const displayRoutines = allOrdered.filter(r => activeFavs.includes(r.id));
+    const routinesToRender = displayRoutines.length > 0 ? displayRoutines : allOrdered;
+    
+    const currentCompleted = completedInCycle || [];
+    const nextRoutineId = routinesToRender.find(r => !currentCompleted.includes(r.id))?.id;
+
     return (
       <div className="p-4 space-y-6 pb-32">
         <div className="px-2">
@@ -841,28 +977,60 @@ export default function App() {
         </div>
         
         <div className="space-y-4">
-          {routines.length === 0 ? (
+          {routinesToRender.length === 0 ? (
             <div className="bg-white border border-slate-100 shadow-sm text-slate-500 p-8 rounded-[32px] text-center font-medium">
               Przejdź do zakładki "Plany", aby stworzyć swój pierwszy trening.
             </div>
           ) : (
-            routines.map(routine => (
-              <button 
-                key={routine.id}
-                onClick={() => startWorkout(routine)}
-                className={`w-full bg-white p-6 rounded-[32px] shadow-lg shadow-slate-200/50 border border-slate-100 flex justify-between items-center hover:border-slate-300 hover:shadow-xl hover:shadow-slate-200/60 transition-all group text-left`}
-              >
-                <div>
-                  <h4 className={`font-black text-xl text-slate-800 ${theme.groupHoverTextMain} transition-colors`}>{routine.name}</h4>
-                  <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-wide">
-                    {routine.exercises.length} ćwiczeń • Ostatnio: <span className="text-slate-500">{getRoutineLastDone(routine.name)}</span>
-                  </p>
-                </div>
-                <div className={`bg-slate-50 border border-slate-100 ${theme.textMain} p-4 rounded-2xl group-hover:bg-gradient-to-r ${theme.gradHover} group-hover:text-white transition-all shadow-sm ${theme.groupHoverShadowMain20}`}>
-                  <Play size={24} fill="currentColor" strokeWidth={1} />
-                </div>
-              </button>
-            ))
+            routinesToRender.map(routine => {
+              const isDone = currentCompleted.includes(routine.id);
+              const isNext = routine.id === nextRoutineId && !isDone;
+
+              let cardStyle = "w-full bg-white p-6 rounded-[32px] shadow-lg shadow-slate-200/50 border border-slate-100 flex justify-between items-center hover:border-slate-300 hover:shadow-xl hover:shadow-slate-200/60 transition-all group text-left relative overflow-hidden";
+              
+              if (isDone) {
+                cardStyle = "w-full bg-slate-100/80 p-6 rounded-[32px] border-2 border-rose-300 flex justify-between items-center opacity-60 hover:opacity-100 transition-all group text-left relative overflow-hidden shadow-none";
+              } else if (isNext) {
+                cardStyle = "w-full p-6 rounded-[32px] border-[3px] border-yellow-400 bg-gradient-to-br from-yellow-100 via-amber-100 to-yellow-200 flex justify-between items-center shadow-[0_0_25px_rgba(250,204,21,0.5)] transition-all group text-left relative overflow-hidden";
+              }
+
+              return (
+                <button 
+                  key={routine.id}
+                  onClick={() => startWorkout(routine)}
+                  className={cardStyle}
+                >
+                  {/* Efekt refleksu dla następnego treningu (jak w superserii) */}
+                  {isNext && (
+                    <div className="absolute inset-0 pointer-events-none z-0" style={{ animation: 'olympicGlow 3s ease-in-out infinite' }}>
+                      <div className="absolute top-0 left-0 w-[50%] h-full bg-gradient-to-r from-transparent via-white/70 to-transparent pointer-events-none" style={{ animation: 'shineSweep 3s infinite linear' }}></div>
+                    </div>
+                  )}
+
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className={`font-black text-xl text-slate-800 ${isDone ? 'line-through text-slate-600' : theme.groupHoverTextMain} transition-colors`}>{routine.name}</h4>
+                      {isDone && (
+                        <span className="bg-rose-100 text-rose-600 border border-rose-200 font-bold text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-lg">
+                          ✓ Wykonany
+                        </span>
+                      )}
+                      {isNext && (
+                        <span className="bg-yellow-400 text-amber-950 font-black text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-full border border-white shadow-sm">
+                          🔥 Następny
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-wide">
+                      {routine.exercises.length} ćwiczeń • Ostatnio: <span className="text-slate-500">{getRoutineLastDone(routine.name)}</span>
+                    </p>
+                  </div>
+                  <div className={`relative z-10 ${isNext ? 'bg-amber-400 text-amber-950 border border-yellow-300 shadow-md' : isDone ? 'bg-slate-200 text-slate-500 border border-slate-300' : `bg-slate-50 border border-slate-100 ${theme.textMain} group-hover:bg-gradient-to-r ${theme.gradHover} group-hover:text-white`} p-4 rounded-2xl transition-all shadow-sm ${theme.groupHoverShadowMain20}`}>
+                    <Play size={24} fill="currentColor" strokeWidth={1} />
+                  </div>
+                </button>
+              );
+            })
           )}
         </div>
       </div>
