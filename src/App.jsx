@@ -165,6 +165,15 @@ export default function App() {
   
   // NOWY STAN: Wymiana na alternatywę podczas treningu
   const [alternativeSwapModal, setAlternativeSwapModal] = useState(null);
+  const [showAddExerciseToWorkoutModal, setShowAddExerciseToWorkoutModal] = useState(false);
+  const [finishEmojiExplosion, setFinishEmojiExplosion] = useState(null);
+
+  // Stany edytora planów
+  const [isCreatingRoutine, setIsCreatingRoutine] = useState(false);
+  const [editingRoutineId, setEditingRoutineId] = useState(null); 
+  const [newRoutineName, setNewRoutineName] = useState('');
+  const [selectedExercisesForRoutine, setSelectedExercisesForRoutine] = useState([]);
+  const [altPickerForIdx, setAltPickerForIdx] = useState(null);
 
   const [db, setDb] = useState(null);
   const [auth, setAuth] = useState(null);
@@ -234,6 +243,49 @@ export default function App() {
 
   useEffect(() => { if (activeTab !== 'history') setSelectedHistoryExercise(null); }, [activeTab]);
 
+  // OBSŁUGA PRZYCISKU "WSTECZ" W MOBILNYM PWA / PRZEGLĄDARCE
+  const isSubViewOrModalOpen = Boolean(
+    showEasterEgg || finishEmojiExplosion || alternativeSwapModal || showAddExerciseToWorkoutModal ||
+    showFinishConfirm || showCancelConfirm || showLogoutConfirm || exerciseToDelete ||
+    routineToDelete || historySetToDelete || showLoginModal || altPickerForIdx !== null ||
+    selectedHistoryExercise || isCreatingRoutine || summaryData || activeWorkout || activeTab !== 'workout'
+  );
+
+  useEffect(() => {
+    if (isSubViewOrModalOpen) {
+      window.history.pushState({ appInternal: true }, '');
+    }
+  }, [isSubViewOrModalOpen]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (showEasterEgg) { setShowEasterEgg(false); return; }
+      if (finishEmojiExplosion) { setFinishEmojiExplosion(null); return; }
+      if (alternativeSwapModal) { setAlternativeSwapModal(null); return; }
+      if (showAddExerciseToWorkoutModal) { setShowAddExerciseToWorkoutModal(false); return; }
+      if (showFinishConfirm) { setShowFinishConfirm(false); return; }
+      if (showCancelConfirm) { setShowCancelConfirm(false); return; }
+      if (showLogoutConfirm) { setShowLogoutConfirm(false); setLogoutText(''); return; }
+      if (exerciseToDelete) { setExerciseToDelete(null); return; }
+      if (routineToDelete) { setRoutineToDelete(null); return; }
+      if (historySetToDelete) { setHistorySetToDelete(null); return; }
+      if (showLoginModal) { setShowLoginModal(false); return; }
+      if (altPickerForIdx !== null) { setAltPickerForIdx(null); return; }
+      if (selectedHistoryExercise) { setSelectedHistoryExercise(null); return; }
+      if (isCreatingRoutine) { setIsCreatingRoutine(false); setEditingRoutineId(null); return; }
+      if (summaryData) { setSummaryData(null); return; }
+      if (activeWorkout) { setShowCancelConfirm(true); return; }
+      if (activeTab !== 'workout') { setActiveTab('workout'); return; }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [
+    showEasterEgg, finishEmojiExplosion, alternativeSwapModal, showAddExerciseToWorkoutModal, showFinishConfirm, showCancelConfirm,
+    showLogoutConfirm, exerciseToDelete, routineToDelete, historySetToDelete, showLoginModal,
+    altPickerForIdx, selectedHistoryExercise, isCreatingRoutine, summaryData, activeWorkout, activeTab
+  ]);
+
   const handleAuth = async (type) => {
     setAuthError('');
     try {
@@ -297,11 +349,6 @@ export default function App() {
   };
 
   // --- LOGIKA PLANÓW TRENINGOWYCH ---
-  const [isCreatingRoutine, setIsCreatingRoutine] = useState(false);
-  const [editingRoutineId, setEditingRoutineId] = useState(null); 
-  const [newRoutineName, setNewRoutineName] = useState('');
-  const [selectedExercisesForRoutine, setSelectedExercisesForRoutine] = useState([]);
-  const [altPickerForIdx, setAltPickerForIdx] = useState(null); // Nowy stan do dodawania alternatyw
 
   const openRoutineEditor = (routine = null) => {
     if (routine) {
@@ -385,6 +432,19 @@ export default function App() {
     setActiveWorkout(updatedWorkout);
   };
 
+  const addExerciseToActiveWorkout = (exId) => {
+    const updatedWorkout = { ...activeWorkout };
+    updatedWorkout.exercises.push({
+      exerciseId: exId,
+      originalId: exId,
+      linked: false,
+      alternatives: [],
+      sets: [{ weight: '', reps: '' }]
+    });
+    setActiveWorkout(updatedWorkout);
+    setShowAddExerciseToWorkoutModal(false);
+  };
+
   const finishWorkout = () => {
     const endTime = new Date();
     const startTime = new Date(activeWorkout.startTime);
@@ -417,6 +477,29 @@ export default function App() {
     saveToCloud({ [historyKey]: updatedHistory });
 
     setSummaryData(summary); setActiveWorkout(null); setShowFinishConfirm(false);
+
+    // LOSOWY EASTER EGG PRZY ZAKOŃCZENIU TRENINGU (np. ok 50% szans)
+    if (Math.random() < 0.5) {
+      const emojiPool = ['🏋️‍♂️', '💪', '🥦', '💩', '😮‍💨', '😍', '🥊', '🔥', '🥳', '🏆', '🍕', '🍰'];
+      const chosenEmoji = emojiPool[Math.floor(Math.random() * emojiPool.length)];
+      
+      const particles = Array.from({ length: 24 }).map(() => {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = 120 + Math.random() * 260;
+        return {
+          emoji: Math.random() < 0.35 ? chosenEmoji : emojiPool[Math.floor(Math.random() * emojiPool.length)],
+          tx: Math.cos(angle) * distance,
+          ty: Math.sin(angle) * distance,
+          tr: (Math.random() - 0.5) * 720,
+          delay: Math.random() * 0.25
+        };
+      });
+
+      setFinishEmojiExplosion({ emoji: chosenEmoji, particles });
+      setTimeout(() => {
+        setFinishEmojiExplosion(null);
+      }, 1800);
+    }
   };
 
   const addSet = (exerciseIndex) => {
@@ -890,7 +973,7 @@ export default function App() {
               className="w-12 h-12 rounded-full border-[3px] border-white bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 shadow-md cursor-pointer hover:scale-105 transition-transform"
             >
               <img 
-                src="image_b14c62.jpg" 
+                src="/image_b14c62.jpg" 
                 alt="Ronnie Coleman" 
                 className="w-full h-full object-cover object-[center_15%] scale-125"
               />
@@ -960,16 +1043,17 @@ export default function App() {
                                <BarChart2 size={18} strokeWidth={2.5} />
                              </button>
                              
-                             {/* PRZYCISK ALTERNATYWY (ZŁOTO-POMARAŃCZOWY) */}
-                             {workoutEx.alternatives && workoutEx.alternatives.length > 0 && (
-                                <button
-                                   onClick={() => setAlternativeSwapModal({ exIndex })}
-                                   className="bg-gradient-to-br from-orange-400 to-amber-500 text-white p-1.5 rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.4)] hover:shadow-[0_0_20px_rgba(245,158,11,0.6)] shrink-0 flex items-center justify-center font-black text-[11px] relative overflow-hidden group border border-orange-300"
-                                >
-                                   <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:animate-shimmer-btn"></div>
-                                   <span className="relative z-10 flex items-center gap-0.5">+{workoutEx.alternatives.length} <RefreshCw size={10} strokeWidth={3} className="opacity-90"/></span>
-                                </button>
-                             )}
+                             {/* PRZYCISK ALTERNATYWY / ZAMIANY (ZŁOTO-POMARAŃCZOWY) */}
+                             <button
+                                onClick={() => setAlternativeSwapModal({ exIndex, showMore: false })}
+                                className="bg-gradient-to-br from-orange-400 to-amber-500 text-white p-1.5 rounded-xl transition-all shadow-[0_0_15px_rgba(245,158,11,0.4)] hover:shadow-[0_0_20px_rgba(245,158,11,0.6)] shrink-0 flex items-center justify-center font-black text-[11px] relative overflow-hidden group border border-orange-300"
+                                title="Zamień ćwiczenie"
+                             >
+                                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/50 to-transparent -translate-x-full group-hover:animate-shimmer-btn"></div>
+                                <span className="relative z-10 flex items-center gap-0.5">
+                                   {workoutEx.alternatives && workoutEx.alternatives.length > 0 ? `+${workoutEx.alternatives.length}` : ''} <RefreshCw size={11} strokeWidth={2.5} className="opacity-90"/>
+                                </span>
+                             </button>
                           </div>
                         </div>
                         
@@ -1145,6 +1229,14 @@ export default function App() {
               </div>
             );
           })}
+
+          {/* PRZYCISK DODAJ ĆWICZENIE DO TRENINGU */}
+          <button
+            onClick={() => setShowAddExerciseToWorkoutModal(true)}
+            className={`w-full py-4 rounded-3xl font-black text-white bg-gradient-to-r ${theme.gradMainSec} shadow-lg ${theme.shadowMain20} flex items-center justify-center gap-2 hover:scale-[1.01] transition-all mt-4`}
+          >
+            <Plus size={22} strokeWidth={3} /> Dodaj ćwiczenie
+          </button>
         </div>
       </div>
     );
@@ -1366,7 +1458,7 @@ export default function App() {
           <header className="bg-white/80 backdrop-blur-2xl p-4 border-b border-slate-100 flex justify-between items-center shrink-0 z-10 rounded-b-[32px] shadow-sm">
             <div className="flex items-center gap-3">
               <div onClick={() => setShowEasterEgg(true)} className="w-12 h-12 rounded-full border-[3px] border-white bg-slate-100 overflow-hidden flex items-center justify-center shrink-0 shadow-md cursor-pointer hover:scale-105 transition-transform">
-                <img src="image_b14c62.jpg" alt="Ronnie" className="w-full h-full object-cover object-[center_15%] scale-125" />
+                <img src="/image_b14c62.jpg" alt="Ronnie" className="w-full h-full object-cover object-[center_15%] scale-125" />
               </div>
               <button onClick={user ? () => setShowLogoutConfirm(true) : () => setShowLoginModal(true)} className={`p-2.5 rounded-2xl border transition-colors ${user ? `${theme.borderMain20} ${theme.bgMain10} ${theme.textMain}` : 'border-slate-200 bg-slate-50 text-slate-400 hover:text-slate-600'}`}>
                 {user ? <LogOut size={20} strokeWidth={2.5} /> : <CloudOff size={20} strokeWidth={2.5} />}
@@ -1513,46 +1605,201 @@ export default function App() {
         {/* MODAL ZAMIANY ĆWICZENIA NA ALTERNATYWĘ (WIDOK TRENINGU) */}
         {alternativeSwapModal && (
            <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
-              <div className="bg-white p-6 rounded-[32px] w-full max-w-sm flex flex-col shadow-2xl">
-                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-black text-xl text-slate-800">Wybierz wariant</h3>
+              <div className="bg-white p-6 rounded-[32px] w-full max-w-sm flex flex-col shadow-2xl max-h-[80vh]">
+                 <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-black text-xl text-slate-800">Zamień ćwiczenie</h3>
                     <button onClick={() => setAlternativeSwapModal(null)} className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-full transition-colors"><X size={20}/></button>
                  </div>
-                 <p className="text-xs text-slate-500 font-medium mb-4">Zamiana dotyczy tylko tego jednego treningu.</p>
-                 <div className="space-y-3 overflow-y-auto max-h-[60vh] custom-scrollbar">
+                 <p className="text-xs text-slate-500 font-medium mb-4">Zamiana dotyczy tylko tego jednego treningu (jednorazowa).</p>
+                 <div className="space-y-4 overflow-y-auto flex-1 custom-scrollbar pr-1">
                     {(() => {
                        const exData = activeWorkout.exercises[alternativeSwapModal.exIndex];
-                       // Pula to zawsze "oryginalne" ćwiczenie (z planu) + wszystkie jego przypisane alternatywy
-                       const pool = [exData.originalId, ...(exData.alternatives || [])];
+                       const currentEx = exercises.find(e => e.id === exData.exerciseId);
+                       const originalEx = exercises.find(e => e.id === exData.originalId);
                        
-                       return pool.map(id => {
-                          const ex = exercises.find(e => e.id === id);
-                          if(!ex) return null;
-                          const isCurrent = id === exData.exerciseId;
-                          
+                       const standardPoolIds = Array.from(new Set([exData.originalId, ...(exData.alternatives || [])]));
+                       const standardExercises = standardPoolIds.map(id => exercises.find(e => e.id === id)).filter(Boolean);
+                       
+                       const targetCategory = (currentEx || originalEx)?.target?.split(' - ')[0] || '';
+
+                       if (!alternativeSwapModal.showMore) {
+                          return (
+                             <div className="space-y-3">
+                                {standardExercises.map(ex => {
+                                   const isCurrent = ex.id === exData.exerciseId;
+                                   return (
+                                      <div 
+                                        key={ex.id} 
+                                        onClick={() => { swapActiveExercise(alternativeSwapModal.exIndex, ex.id); setAlternativeSwapModal(null); }} 
+                                        className={`p-4 border-2 rounded-2xl cursor-pointer transition-all ${isCurrent ? 'border-orange-400 bg-orange-50 shadow-md shadow-orange-500/10' : 'border-slate-100 bg-white hover:border-orange-200 hover:shadow-sm'}`}
+                                      >
+                                         <div className="flex justify-between items-start">
+                                            <div>
+                                               <p className={`font-black text-sm ${isCurrent ? 'text-orange-700' : 'text-slate-800'}`}>{ex.name}</p>
+                                               <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1 mb-2">{ex.target}</p>
+                                            </div>
+                                            {isCurrent && <div className="bg-orange-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded-lg">Aktywne</div>}
+                                         </div>
+                                         <p className={`text-[11px] font-bold ${isCurrent ? 'text-orange-600 bg-orange-100/50' : 'text-amber-600 bg-amber-50'} inline-block px-2 py-1 rounded-lg border ${isCurrent ? 'border-orange-200' : 'border-amber-100'}`}>
+                                            {getLastExercisePerformance(ex.id)}
+                                         </p>
+                                      </div>
+                                   );
+                                })}
+
+                                <button
+                                   onClick={() => setAlternativeSwapModal({ ...alternativeSwapModal, showMore: true })}
+                                   className="w-full mt-4 py-3.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl text-xs flex items-center justify-center gap-2 transition-colors uppercase tracking-wider"
+                                >
+                                   <Plus size={16} strokeWidth={3}/> Więcej (Wszystkie ćwiczenia)
+                                </button>
+                             </div>
+                          );
+                       }
+
+                       const standardIdsSet = new Set(standardExercises.map(e => e.id));
+                       const suggestedExercises = exercises.filter(e => !standardIdsSet.has(e.id) && e.target.startsWith(targetCategory));
+                       
+                       const suggestedIdsSet = new Set(suggestedExercises.map(e => e.id));
+                       const otherExercises = exercises.filter(e => !standardIdsSet.has(e.id) && !suggestedIdsSet.has(e.id));
+
+                       const renderExerciseCard = (ex) => {
+                          const isCurrent = ex.id === exData.exerciseId;
                           return (
                              <div 
-                               key={id} 
-                               onClick={() => { swapActiveExercise(alternativeSwapModal.exIndex, id); setAlternativeSwapModal(null); }} 
-                               className={`p-4 border-2 rounded-2xl cursor-pointer transition-all ${isCurrent ? 'border-orange-400 bg-orange-50 shadow-md shadow-orange-500/10' : 'border-slate-100 bg-white hover:border-orange-200 hover:shadow-sm'}`}
+                               key={ex.id} 
+                               onClick={() => { swapActiveExercise(alternativeSwapModal.exIndex, ex.id); setAlternativeSwapModal(null); }} 
+                               className={`p-3.5 border-2 rounded-2xl cursor-pointer transition-all ${isCurrent ? 'border-orange-400 bg-orange-50 shadow-md shadow-orange-500/10' : 'border-slate-100 bg-white hover:border-orange-200 hover:shadow-sm'}`}
                              >
                                 <div className="flex justify-between items-start">
                                    <div>
                                       <p className={`font-black text-sm ${isCurrent ? 'text-orange-700' : 'text-slate-800'}`}>{ex.name}</p>
-                                      <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-1 mb-2">{ex.target}</p>
+                                      <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-0.5 mb-1">{ex.target}</p>
                                    </div>
-                                   {isCurrent && <div className="bg-orange-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded-lg">Aktywne</div>}
+                                   {isCurrent && <div className="bg-orange-500 text-white text-[9px] font-black uppercase px-2 py-0.5 rounded-lg">Aktywne</div>}
                                 </div>
-                                <p className={`text-[11px] font-bold ${isCurrent ? 'text-orange-600 bg-orange-100/50' : 'text-amber-600 bg-amber-50'} inline-block px-2 py-1 rounded-lg border ${isCurrent ? 'border-orange-200' : 'border-amber-100'}`}>
-                                   {getLastExercisePerformance(id)}
+                                <p className={`text-[10px] font-bold ${isCurrent ? 'text-orange-600 bg-orange-100/50' : 'text-slate-500 bg-slate-50'} inline-block px-2 py-0.5 rounded-lg border ${isCurrent ? 'border-orange-200' : 'border-slate-200'}`}>
+                                   {getLastExercisePerformance(ex.id)}
                                 </p>
                              </div>
-                          )
-                       })
+                          );
+                       };
+
+                       return (
+                          <div className="space-y-5">
+                             <div>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Standardowe alternatywy</p>
+                                <div className="space-y-2">
+                                   {standardExercises.map(renderExerciseCard)}
+                                </div>
+                             </div>
+
+                             {suggestedExercises.length > 0 && (
+                                <div>
+                                   <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-2 flex items-center gap-1">
+                                      💪 Sugerowane ({targetCategory})
+                                   </p>
+                                   <div className="space-y-2">
+                                      {suggestedExercises.map(renderExerciseCard)}
+                                   </div>
+                                </div>
+                             )}
+
+                             {otherExercises.length > 0 && (
+                                <div>
+                                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Wszystkie ćwiczenia</p>
+                                   <div className="space-y-2">
+                                      {otherExercises.map(renderExerciseCard)}
+                                   </div>
+                                </div>
+                             )}
+                          </div>
+                       );
                     })()}
                  </div>
               </div>
            </div>
+        )}
+
+        {/* MODAL DODAWANIA ĆWICZENIA DO AKTYWNEGO TRENINGU */}
+        {showAddExerciseToWorkoutModal && (
+           <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-6">
+              <div className="bg-white p-6 rounded-[32px] w-full max-w-sm flex flex-col shadow-2xl max-h-[80vh]">
+                 <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-black text-xl text-slate-800">Dodaj ćwiczenie</h3>
+                    <button onClick={() => setShowAddExerciseToWorkoutModal(false)} className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-400 rounded-full transition-colors"><X size={20}/></button>
+                 </div>
+                 <p className="text-xs text-slate-500 font-medium mb-4">Wybierz ćwiczenie z biblioteki, aby dodać je do obecnego treningu.</p>
+                 <div className="space-y-2 overflow-y-auto flex-1 custom-scrollbar pr-1">
+                    {[...exercises]
+                       .sort((a, b) => a.name.localeCompare(b.name))
+                       .map(ex => (
+                          <div 
+                             key={ex.id} 
+                             onClick={() => addExerciseToActiveWorkout(ex.id)}
+                             className="flex items-center justify-between p-3.5 bg-slate-50 hover:bg-slate-100 border border-slate-100 hover:border-slate-200 rounded-2xl cursor-pointer transition-all group"
+                          >
+                             <div className="flex items-center gap-3 overflow-hidden">
+                                <div className={`w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center ${theme.textMain} shrink-0 shadow-sm`}>
+                                   <MuscleIcon category={ex.target.split(' - ')[0]} className="w-5 h-5" />
+                                </div>
+                                <div className="truncate">
+                                   <p className="font-bold text-sm text-slate-800 group-hover:text-slate-900 truncate">{ex.name}</p>
+                                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{ex.target}</p>
+                                </div>
+                             </div>
+                             <div className={`w-8 h-8 rounded-full bg-white border border-slate-100 flex items-center justify-center ${theme.textMain} shrink-0 shadow-sm group-hover:scale-110 transition-transform`}>
+                                <Plus size={16} strokeWidth={3} />
+                             </div>
+                          </div>
+                       ))}
+                 </div>
+              </div>
+           </div>
+        )}
+
+        {finishEmojiExplosion && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm pointer-events-none overflow-hidden">
+            <style>{`
+              @keyframes mainEmojiZoomExplode {
+                0% { transform: scale(0.1) rotate(-15deg); opacity: 0; }
+                40% { transform: scale(3.5) rotate(10deg); opacity: 1; filter: drop-shadow(0 0 30px rgba(255,255,255,0.9)); }
+                70% { transform: scale(6.5) rotate(0deg); opacity: 0.8; }
+                100% { transform: scale(11) rotate(25deg); opacity: 0; }
+              }
+              @keyframes confettiBurst {
+                0% { transform: translate(0, 0) scale(0.4) rotate(0deg); opacity: 1; }
+                100% { transform: translate(var(--tw-tx), var(--tw-ty)) scale(1.6) rotate(var(--tw-tr)); opacity: 0; }
+              }
+              .animate-emoji-main {
+                animation: mainEmojiZoomExplode 1.6s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+              }
+              .animate-confetti-particle {
+                animation: confettiBurst 1.5s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+              }
+            `}</style>
+            
+            {/* Główna rosnąca emotka */}
+            <div className="animate-emoji-main text-9xl select-none">
+              {finishEmojiExplosion.emoji}
+            </div>
+
+            {/* Wybuchające cząsteczki konfetti */}
+            {finishEmojiExplosion.particles.map((p, i) => (
+              <div
+                key={i}
+                className="absolute animate-confetti-particle text-4xl select-none"
+                style={{
+                  '--tw-tx': `${p.tx}px`,
+                  '--tw-ty': `${p.ty}px`,
+                  '--tw-tr': `${p.tr}deg`,
+                  animationDelay: `${p.delay}s`
+                }}
+              >
+                {p.emoji}
+              </div>
+            ))}
+          </div>
         )}
 
         {showEasterEgg && (
@@ -1560,7 +1807,7 @@ export default function App() {
             <button onClick={() => setShowEasterEgg(false)} className="absolute top-8 right-8 text-white/50 hover:text-white bg-white/10 p-3 rounded-full backdrop-blur-lg"><X size={28} /></button>
             <div className="flex flex-col items-center max-w-lg w-full">
               <div className="p-2 bg-white/10 rounded-[32px] backdrop-blur-md">
-                <img src="image_b14c62.jpg" alt="YEAH BUDDY" className="w-full h-auto rounded-[24px] shadow-2xl" />
+                <img src="/image_b14c62.jpg" alt="YEAH BUDDY" className="w-full h-auto rounded-[24px] shadow-2xl" />
               </div>
               <p className="mt-10 text-5xl font-black text-white italic text-center uppercase tracking-widest drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)]">YEAH BUDDY! 💪</p>
             </div>
